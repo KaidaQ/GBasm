@@ -1,12 +1,14 @@
 package cpu;
+import memory.Memory;
 
 public class CPU {
 	private int A, B, C, D, E, H, L, F; //8 bit registers 
 	private int SP, PC; //16 bit registers (AF,BC,DE,HL paired);
 	
-	private byte[] memory = new byte[0xFFFF]; //64KB of simulated "ram"
+	private Memory memory;
 	
 	public CPU() {
+		memory = new Memory();
 		reset();
 	}
 	
@@ -27,11 +29,11 @@ public class CPU {
 		SP = 0xFFFE;
 		PC = 0x0100; // all execution starts here
 		//16 bit regs
-		
-		memory[0x0100] = (byte) 0x76; //test the halt
-		memory[0x0101] = (byte) 0x01; //test ld
-		memory[0x0101] = (byte) 0x03; //test add
-		memory[0x0101] = (byte) 0x05; //test sub
+		memory.write(0x0100, 0x76);
+		memory.write(0x0101, 0x01);
+		memory.write(0x0102, 0x03);
+		memory.write(0x0103, 0x05);
+		memory.write(0x0104, 0x00);
 	}
 	
 	//get paired 16bit regs via getter functs
@@ -53,7 +55,10 @@ public class CPU {
 	 * @return
 	 */
 	public byte fetch() {
-		return memory[PC++];
+		if(PC >= 0x10000) {
+			PC = 0x0000;
+		}
+		return (byte) memory.read(PC++);
 	}
 	
 	/**
