@@ -3,10 +3,6 @@ package memory;
 public class Memory {
 	private byte[] memory = new byte[0x10000]; //64kb of memory
 	
-	public Memory() {
-		//init as needed when using ROMs
-	}
-	
 	public int read(int address) {
 		//read bytes
 		if(address >= 0 && address < memory.length) {
