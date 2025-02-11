@@ -18,7 +18,17 @@ public class Emulator {
 		for(int i = 0x100; i < 0xFFFF; i++) {
 			if(Math.floor(Math.random() * 5)> 3) {
 				memory.write(i, 0x04);
-				memory.write(i, 0x05);
+
+
+			}
+			if(Math.floor(Math.random() * 5)> 3) {
+				memory.write(i, 0x80);
+				
+
+			}
+			if(Math.floor(Math.random() * 2048)> 2020) {
+				memory.write(i, 0x76);
+				
 
 			}
 		}
