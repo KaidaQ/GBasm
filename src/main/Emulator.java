@@ -12,6 +12,15 @@ public class Emulator {
 		memory.write(0xFFFF, 0x76);
 		memory.write(0x120, 0x04); //simply increment the B register
 		
+		int start = memory.read(0x100) & 0xFF;
+		int end = memory.read(0x150) & 0xFF;
+		
+		for(int i = 0x100; i < 0x150; i++) {
+			memory.write(i, 0x04);
+			if(i % 2 == 0) {
+				memory.write(i, 0x00);
+			}
+		}
 		System.out.println("init emulator;");
 		System.out.println("cpu starting: " + Integer.toHexString(cpu.getAF()));
 		//testOpcode(cpu, memory);
