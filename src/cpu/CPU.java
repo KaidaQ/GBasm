@@ -81,6 +81,37 @@ public class CPU {
         F = value & 0xFF;  // Ensure the value is 8 bits
     }
 
+    public int getA() {
+        return A;
+    }
+
+    public int getB() {
+        return B;
+    }
+
+    public int getC() {
+        return C;
+    }
+
+    public int getD() {
+        return D;
+    }
+
+    public int getE() {
+        return E;
+    }
+
+    public int getH() {
+        return H;
+    }
+
+    public int getL() {
+        return L;
+    }
+
+    public int getF() {
+        return F;
+    }
 	/**
 	 * fetch the instructions
 	 * @return
@@ -98,10 +129,15 @@ public class CPU {
 	 */
 	public void execute(byte opcode) {
 	    switch(opcode) {
+	    
+	    	case (byte) 0x00: // NOP - No operation (commonly used as a placeholder)
+	    		System.out.println("NOP executed.");
+            	break;
+            	
 	        case (byte) 0x76: //"HALT"
 	            System.out.println("Halt instruction executed.");
 	            break;
-	        case (byte) 0x01: // LD A, B
+	        case (byte) 0x78: // LD A, B
 	            A = B;
 	            System.out.println("LD A, B executed: A = " + Integer.toHexString(A));
 	            break;
@@ -109,11 +145,11 @@ public class CPU {
 	            memory.write(getBC(), (byte) A);
 	            System.out.println("LD (BC), A executed: (BC) = " + Integer.toHexString(A));
 	            break;
-	        case (byte) 0x03: // ADD A, B
+	        case (byte) 0x80: // ADD A, B
 	            A += B;
 	            System.out.println("ADD A, B executed: A = " + Integer.toHexString(A));
 	            break;
-	        case (byte) 0x05: // SUB A, B
+	        case (byte) 0x90: // SUB A, B
 	            A -= B;
 	            System.out.println("SUB A, B executed: A = " + Integer.toHexString(A));
 	            break;
@@ -126,9 +162,15 @@ public class CPU {
 	            memory.write(addr, (byte) A);
 	            System.out.println("LD (a16), A executed: (a16) = " + Integer.toHexString(addr) + ", A = " + Integer.toHexString(A));
 	            break;
-	        case (byte) 0x00: // NOP - No operation (commonly used as a placeholder)
-	            System.out.println("NOP executed.");
+	            //increment / decrement opcodes
+	        case (byte) 0x04: //INC B
+	        	B++;
+	            System.out.println("INC B executed: B = " + Integer.toHexString(B));
 	            break;
+	        case (byte) 0x05: //DEC B
+	        	B--;
+	        	System.out.println("DEC B executed: B = " + Integer .toHexString(B));
+	            
 	        default:
 	            System.out.println("Unknown opcode: 0x" + Integer.toHexString(opcode & 0xFF));
 	    }

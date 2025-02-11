@@ -9,12 +9,21 @@ public class Emulator {
 		CPU cpu = new CPU();
 		
 		cpu.setMemory(memory);
+		memory.write(0xFFFF, 0x76);
+		memory.write(0x120, (byte) 0x04); //simply increment the B register
 		
 		System.out.println("init emulator;");
 		System.out.println("cpu starting: " + Integer.toHexString(cpu.getAF()));
+		//testOpcode(cpu, memory);
+		runCPU(cpu);
+
 		
+		
+	}
+	
+	public static void testOpcode(CPU cpu, Memory memory) {
 		memory.write(0x0100, (byte) 0x03E);
-		memory.write(0x101, (byte) 0x42);
+		memory.write(0x101, (byte) 0x20);
 		
 		cpu.setBC(0x1234);
 		
@@ -37,8 +46,10 @@ public class Emulator {
 		    cpu.execute(opcode);  // Execute the opcode
 		    
 		    instructionCount++;
-		    if (instructionCount > 260) { // To avoid infinite loops during testing
+		    if (instructionCount > 150) { // To avoid infinite loops during testing
 		        System.out.println("Instruction count exceeded, breaking the loop.");
+		        System.out.println("Final val in B: " + Integer.toHexString(cpu.getB()));
+		        
 		        break;
 		    }
 		}
