@@ -23,13 +23,14 @@ Planned Features -
 
 # Getting Started
 Firstly clone the repo.
-git clone https://github.com/KaidaQ/GBasm
+
+```git clone https://github.com/KaidaQ/GBasm```
 
 compile
-javac -d bin src/*.java
+```javac -d bin src/*.java```
 
 then run
-java main.Emulator
+```java main.Emulator```
 
 # License
 This project is licensed under the MIT License - see the LICENSE file for details.
