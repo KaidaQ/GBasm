@@ -15,12 +15,15 @@ public class Emulator {
 		int start = memory.read(0x100) & 0xFF;
 		int end = memory.read(0x150) & 0xFF;
 		
-		for(int i = 0x100; i < 0x150; i++) {
-			memory.write(i, 0x04);
-			if(i % 2 == 0) {
-				memory.write(i, 0x00);
+		for(int i = 0x100; i < 0xFFFF; i++) {
+			if(Math.floor(Math.random() * 5)> 3) {
+				memory.write(i, 0x04);
+				memory.write(i, 0x05);
+
 			}
 		}
+		
+		memory.write(0x02ff, 0x76);
 		System.out.println("init emulator;");
 		System.out.println("cpu starting: " + Integer.toHexString(cpu.getAF()));
 		//testOpcode(cpu, memory);
@@ -48,16 +51,16 @@ public class Emulator {
 		while (true) {
 		    byte opcode = cpu.fetch();  // Fetch the next instruction
 		    if (opcode == (byte) 0x76) { // HALT condition
-		        System.out.println("CPU halted.");
+		        System.out.println("CPU halted at address: " + "0x" + Integer.toHexString(instructionCount));
 		        break;
 		    }
 		    
 		    cpu.execute(opcode);  // Execute the opcode
 		    
 		    instructionCount++;
-		    if (instructionCount > 150) { // To avoid infinite loops during testing
+		    if (instructionCount > 0xFFFF) { // To avoid infinite loops during testing
 		        System.out.println("Instruction count exceeded, breaking the loop.");
-		        System.out.println("Final val in B: " + Integer.toHexString(cpu.getB()));
+		        System.out.println("Final val in B: " + "0x" + Integer.toHexString(cpu.getB()));
 		        
 		        break;
 		    }

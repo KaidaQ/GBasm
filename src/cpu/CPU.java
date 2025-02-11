@@ -197,16 +197,28 @@ public class CPU {
 	            break;
 	            
 	        	// Arithmetic
-	        case (byte) 0x80: // ADD A, B
-	            A += B;
+	        case (byte) 0x80: { // ADD A, B
+	            int result = A + B;
+	        	setFlag(7, (result & 0xFF) == 0);
+	        	setFlag(6, false);
+	        	setFlag(5, ((A & 0xF) + (B & 0xF)) > 0xF);
+	        	setFlag(4, result > 0xFF);
+	        	A = result & 0xFF;
 	            System.out.println("ADD A, B executed: A = " + Integer.toHexString(A));
 	            break;
-	            
-	        case (byte) 0x81: // ADD A, C
-	        	A += C;
+	        }
+	        
+	        case (byte) 0x81: {// ADD A, C
+	            int result = A + C;
+	        	setFlag(7, (result & 0xFF) == 0);
+	        	setFlag(6, false);
+	        	setFlag(5, ((A & 0xF) + (C & 0xF)) > 0xF);
+	        	setFlag(4, result > 0xFF);
+	        	A = result & 0xFF;
 	        	System.out.println("ADD A, C executed: A = " + Integer.toHexString(A));
 	            break;
-	            
+	        }
+	        
 	        case (byte) 0x90: // SUB A, B
 	            A -= B;
 	        	System.out.println("SUB A, B executed: A = " + Integer.toHexString(A));
@@ -228,7 +240,7 @@ public class CPU {
 	        	System.out.println("XOR A, C executed:");
 	        	break;
 	        	
-	        case (byte) 0xB2:
+	        case (byte) 0xB2: // OR A, D
 	        	A = A | D;
 	        	System.out.println("OR A, D");
 	        	break;
@@ -236,11 +248,11 @@ public class CPU {
 	            //increment / decrement opcodes
 	        case (byte) 0x04: //INC B
 	        	B++;
-	            System.out.println("INC B executed: B = " + Integer.toHexString(B));
+	            System.out.println("INC B executed: B = " + Integer.toHexString(B & 0xFF));
 	            break;
 	        case (byte) 0x05: //DEC B
 	        	B--;
-	        	System.out.println("DEC B executed: B = " + Integer .toHexString(B));
+	        	System.out.println("DEC B executed: B = " + Integer .toHexString(B & 0xFF));
 	            
 	        	//default case (unknown opcode)
 	        default:
@@ -254,6 +266,28 @@ public class CPU {
 	public void step() {
 		byte opcode = fetch();
 		execute(opcode);
+	}
+	
+	//flag implementation
+	public void setFlag(int bit, boolean condit) {
+		if (condit) F |= (1 << bit);
+		else F &= ~(1 << bit);
+	}
+ 	
+	/**
+	 * flag positions
+	 * 7 = Zero
+	 * 6 = Subtract (N)
+	 * 5 = Half carry
+	 * 4 = Carry
+	 * 3-0 = 0
+	 * 
+	 * 
+	 * @param bit
+	 * @return
+	 */
+	public boolean getFlag(int bit) {
+		return (F & (1 << bit)) != 0;
 	}
 	
 	//set 16 bit regs
@@ -274,3 +308,4 @@ public class CPU {
 		L = val & 0xFF;
 	}
 }
+ 
