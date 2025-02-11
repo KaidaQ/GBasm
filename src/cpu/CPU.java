@@ -129,39 +129,110 @@ public class CPU {
 	 */
 	public void execute(byte opcode) {
 	    switch(opcode) {
-	    
+	    		//placeholder instruction
 	    	case (byte) 0x00: // NOP - No operation (commonly used as a placeholder)
 	    		System.out.println("NOP executed.");
             	break;
             	
+            	//CPU stop instructions
 	        case (byte) 0x76: //"HALT"
 	            System.out.println("Halt instruction executed.");
 	            break;
+	            
+	            //Load instructions
 	        case (byte) 0x78: // LD A, B
 	            A = B;
 	            System.out.println("LD A, B executed: A = " + Integer.toHexString(A));
 	            break;
+	            
 	        case (byte) 0x02: // LD (BC), A
 	            memory.write(getBC(), (byte) A);
 	            System.out.println("LD (BC), A executed: (BC) = " + Integer.toHexString(A));
 	            break;
-	        case (byte) 0x80: // ADD A, B
-	            A += B;
-	            System.out.println("ADD A, B executed: A = " + Integer.toHexString(A));
-	            break;
-	        case (byte) 0x90: // SUB A, B
-	            A -= B;
-	            System.out.println("SUB A, B executed: A = " + Integer.toHexString(A));
-	            break;
+	            
+	        case (byte) 0x79: // LD A, C
+	        	A = C;
+	        	System.out.println("LD A, B executed.");
+	        	break;
+	        	
+	        case (byte) 0x7A: // LD A, D
+	        	A = D;
+	        	System.out.println("LD A, D executed.");
+	        	break;
+	        	
+	        case (byte) 0x7B: // LD A, E
+	        	A = E;
+	        	System.out.println("LD A, E executed.");
+	        	break;
+	        	
+	        case (byte) 0x7C: // LD A, H
+	        	A = H;
+	        	System.out.println("LD A, H executed.");
+	        	break;
+	        	
+	        case (byte) 0x7D: // LD A, L
+	        	A = L;
+	        	System.out.println("LD A, L executed.");
+	        	break;
+	        	
+	        case (byte) 0x7E: // LD A, (HL)
+	        	A = memory.read(getHL());
+	        	System.out.println("LD A, (HL) executed.");
+	        	break;
+	        	
+	        case (byte) 0x77: //LD (HL), A
+	        	memory.write(getHL(), A);
+	        	System.out.println("LD (HL), A executed.");
+	        	break;
+	        	
 	        case (byte) 0x3E: // LD A, (d8) - Load immediate value into A (using memory)
 	            A = memory.read(PC++);
 	            System.out.println("LD A, (d8) executed: A = " + Integer.toHexString(A));
 	            break;
+	            
 	        case (byte) 0xEA: // LD (a16), A
 	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
 	            memory.write(addr, (byte) A);
 	            System.out.println("LD (a16), A executed: (a16) = " + Integer.toHexString(addr) + ", A = " + Integer.toHexString(A));
 	            break;
+	            
+	        	// Arithmetic
+	        case (byte) 0x80: // ADD A, B
+	            A += B;
+	            System.out.println("ADD A, B executed: A = " + Integer.toHexString(A));
+	            break;
+	            
+	        case (byte) 0x81: // ADD A, C
+	        	A += C;
+	        	System.out.println("ADD A, C executed: A = " + Integer.toHexString(A));
+	            break;
+	            
+	        case (byte) 0x90: // SUB A, B
+	            A -= B;
+	        	System.out.println("SUB A, B executed: A = " + Integer.toHexString(A));
+	        	break;
+	        	
+	        case (byte) 0x91: // SUB A, C
+	        	A -= C;
+	        	System.out.println("SUB A, C executed: C = " + Integer.toHexString(A));
+	        	break;
+	        	
+	        	//logical opcodes
+	        case (byte) 0xA0: // AND A, B
+	        	A = A & B;
+	        	System.out.println("AND A, B executed:");
+	        	break;
+	        	
+	        case (byte) 0xA9: // XOR A, C
+	        	A = A ^ C;
+	        	System.out.println("XOR A, C executed:");
+	        	break;
+	        	
+	        case (byte) 0xB2:
+	        	A = A | D;
+	        	System.out.println("OR A, D");
+	        	break;
+
 	            //increment / decrement opcodes
 	        case (byte) 0x04: //INC B
 	        	B++;
@@ -171,6 +242,7 @@ public class CPU {
 	        	B--;
 	        	System.out.println("DEC B executed: B = " + Integer .toHexString(B));
 	            
+	        	//default case (unknown opcode)
 	        default:
 	            System.out.println("Unknown opcode: 0x" + Integer.toHexString(opcode & 0xFF));
 	    }

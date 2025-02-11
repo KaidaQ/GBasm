@@ -10,7 +10,7 @@ public class Emulator {
 		
 		cpu.setMemory(memory);
 		memory.write(0xFFFF, 0x76);
-		memory.write(0x120, (byte) 0x04); //simply increment the B register
+		memory.write(0x120, 0x04); //simply increment the B register
 		
 		System.out.println("init emulator;");
 		System.out.println("cpu starting: " + Integer.toHexString(cpu.getAF()));
