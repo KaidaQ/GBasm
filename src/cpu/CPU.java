@@ -4,6 +4,7 @@ import memory.Memory;
 public class CPU {
 	private int A, B, C, D, E, H, L, F; //8 bit registers 
 	private int SP, PC; //16 bit registers (AF,BC,DE,HL paired);
+	private boolean ime = false;
 	
 	private Memory memory;
 	
@@ -128,6 +129,9 @@ public class CPU {
 	 * @param opcode
 	 */
 	public void execute(byte opcode) {
+		int addr;
+		int value;
+		int result;
 	    switch(opcode) {
 	        // Placeholder instruction
 	        case (byte) 0x00: // NOP - No operation (commonly used as a placeholder)
@@ -191,14 +195,14 @@ public class CPU {
 	            break;
 
 	        case (byte) 0xEA: // LD (a16), A
-	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	            addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
 	            memory.write(addr, (byte) A);
 	            System.out.println("LD (a16), A executed: (a16) = " + Integer.toHexString(addr) + ", A = " + Integer.toHexString(A));
 	            break;
 
 	        // Arithmetic instructions
 	        case (byte) 0x80: { // ADD A, B
-	            int result = A + B;
+	            result = A + B;
 	            setFlag(7, (result & 0xFF) == 0);
 	            setFlag(6, false);
 	            setFlag(5, ((A & 0xF) + (B & 0xF)) > 0xF);
@@ -209,7 +213,7 @@ public class CPU {
 	        }
 
 	        case (byte) 0x81: { // ADD A, C
-	            int result = A + C;
+	            result = A + C;
 	            setFlag(7, (result & 0xFF) == 0);
 	            setFlag(6, false);
 	            setFlag(5, ((A & 0xF) + (C & 0xF)) > 0xF);
@@ -220,7 +224,7 @@ public class CPU {
 	        }
 
 	        case (byte) 0x82: { // ADD A, D
-	            int result = A + D;
+	            result = A + D;
 	            setFlag(7, (result & 0xFF) == 0);
 	            setFlag(6, false);
 	            setFlag(5, ((A & 0xF) + (D & 0xF)) > 0xF);
@@ -231,7 +235,7 @@ public class CPU {
 	        }
 
 	        case (byte) 0x83: { // ADD A, E
-	            int result = A + E;
+	            result = A + E;
 	            setFlag(7, (result & 0xFF) == 0);
 	            setFlag(6, false);
 	            setFlag(5, ((A & 0xF) + (E & 0xF)) > 0xF);
@@ -242,7 +246,7 @@ public class CPU {
 	        }
 
 	        case (byte) 0x84: { // ADD A, H
-	            int result = A + H;
+	            result = A + H;
 	            setFlag(7, (result & 0xFF) == 0);
 	            setFlag(6, false);
 	            setFlag(5, ((A & 0xF) + (H & 0xF)) > 0xF);
@@ -253,7 +257,7 @@ public class CPU {
 	        }
 
 	        case (byte) 0x85: { // ADD A, L
-	            int result = A + L;
+	            result = A + L;
 	            setFlag(7, (result & 0xFF) == 0);
 	            setFlag(6, false);
 	            setFlag(5, ((A & 0xF) + (L & 0xF)) > 0xF);
@@ -264,8 +268,8 @@ public class CPU {
 	        }
 
 	        case (byte) 0x86: { // ADD A, (HL)
-	            int value = memory.read(getHL());
-	            int result = A + value;
+	            value = memory.read(getHL());
+	            result = A + value;
 	            setFlag(7, (result & 0xFF) == 0);
 	            setFlag(6, false);
 	            setFlag(5, ((A & 0xF) + (value & 0xF)) > 0xF);
@@ -276,8 +280,8 @@ public class CPU {
 	        }
 
 	        case (byte) 0xC6: { // ADD A, d8
-	            int value = memory.read(PC++);
-	            int result = A + value;
+	            value = memory.read(PC++);
+	            result = A + value;
 	            setFlag(7, (result & 0xFF) == 0);
 	            setFlag(6, false);
 	            setFlag(5, ((A & 0xF) + (value & 0xF)) > 0xF);
@@ -348,7 +352,7 @@ public class CPU {
 	            break;
 
 	        case (byte) 0x96: { // SUB A, (HL)
-	            int value = memory.read(getHL());
+	            value = memory.read(getHL());
 	            A -= value;
 	            setFlag(7, A == 0);
 	            setFlag(6, true);
@@ -360,7 +364,7 @@ public class CPU {
 	        }
 
 	        case (byte) 0xD6: { // SUB A, d8
-	            int value = memory.read(PC++);
+	            value = memory.read(PC++);
 	            A -= value;
 	            setFlag(7, A == 0);
 	            setFlag(6, true);
@@ -427,7 +431,7 @@ public class CPU {
 	            break;
 
 	        case (byte) 0xA6: { // AND A, (HL)
-	            int value = memory.read(getHL());
+	            value = memory.read(getHL());
 	            A = A & value;
 	            setFlag(7, A == 0);
 	            setFlag(6, false);
@@ -438,7 +442,7 @@ public class CPU {
 	        }
 
 	        case (byte) 0xE6: { // AND A, d8
-	            int value = memory.read(PC++);
+	            value = memory.read(PC++);
 	            A = A & value;
 	            setFlag(7, A == 0);
 	            setFlag(6, false);
@@ -503,7 +507,7 @@ public class CPU {
 	            break;
 
 	        case (byte) 0xAE: { // XOR A, (HL)
-	            int value = memory.read(getHL());
+	            value = memory.read(getHL());
 	            A = A ^ value;
 	            setFlag(7, A == 0);
 	            setFlag(6, false);
@@ -514,7 +518,7 @@ public class CPU {
 	        }
 
 	        case (byte) 0xEE: { // XOR A, d8
-	            int value = memory.read(PC++);
+	            value = memory.read(PC++);
 	            A = A ^ value;
 	            setFlag(7, A == 0);
 	            setFlag(6, false);
@@ -579,7 +583,7 @@ public class CPU {
 	            break;
 
 	        case (byte) 0xB6: // OR A, (HL)
-	            int value = memory.read(getHL());
+	            value = memory.read(getHL());
 	            A = A | value;
 	            setFlag(7, A == 0);
 	            setFlag(6, false);
@@ -850,25 +854,26 @@ public class CPU {
 
 	        // Jump instructions
 	        case (byte) 0xC3: { // JP nn
-	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	            addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
 	            PC = addr;
 	            System.out.println("JP nn executed: PC = " + Integer.toHexString(PC));
 	            break;
 	        }
 
-	        case (byte) 0xC2: { // JP NZ, nn
-	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	        case (byte) 0xC2:  // JP NZ, nn
+	            addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
 	            if (!getFlag(7)) { // Zero flag is not set
 	                PC = addr;
 	                System.out.println("JP NZ, nn executed: PC = " + Integer.toHexString(PC));
+	                break;
 	            } else {
 	                System.out.println("JP NZ, nn not taken.");
 	            }
 	            break;
-	        }
+	        
 
-	        case (byte) 0xCA: { // JP Z, nn
-	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	        case (byte) 0xCA:  // JP Z, nn
+	            addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
 	            if (getFlag(7)) { // Zero flag is set
 	                PC = addr;
 	                System.out.println("JP Z, nn executed: PC = " + Integer.toHexString(PC));
@@ -876,10 +881,9 @@ public class CPU {
 	                System.out.println("JP Z, nn not taken.");
 	            }
 	            break;
-	        }
 
-	        case (byte) 0xD2: { // JP NC, nn
-	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	        case (byte) 0xD2:  // JP NC, nn
+	            addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
 	            if (!getFlag(4)) { // Carry flag is not set
 	                PC = addr;
 	                System.out.println("JP NC, nn executed: PC = " + Integer.toHexString(PC));
@@ -887,10 +891,10 @@ public class CPU {
 	                System.out.println("JP NC, nn not taken.");
 	            }
 	            break;
-	        }
+	        
 
-	        case (byte) 0xDA: { // JP C, nn
-	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	        case (byte) 0xDA:  // JP C, nn
+	            addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
 	            if (getFlag(4)) { // Carry flag is set
 	                PC = addr;
 	                System.out.println("JP C, nn executed: PC = " + Integer.toHexString(PC));
@@ -898,7 +902,6 @@ public class CPU {
 	                System.out.println("JP C, nn not taken.");
 	            }
 	            break;
-	        }
 
 	        case (byte) 0xE9: // JP (HL)
 	            PC = getHL();
@@ -962,7 +965,7 @@ public class CPU {
 	        }
 
 	        case (byte) 0xCD: { // CALL nn
-	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	            addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
 	            SP -= 2;
 	            memory.write(SP, PC & 0xFF);
 	            memory.write(SP + 1, (PC >> 8) & 0xFF);
@@ -972,7 +975,7 @@ public class CPU {
 	        }
 
 	        case (byte) 0xC4: { // CALL NZ, nn
-	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	            addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
 	            if (!getFlag(7)) { // Zero flag is not set
 	                SP -= 2;
 	                memory.write(SP, PC & 0xFF);
@@ -986,7 +989,7 @@ public class CPU {
 	        }
 
 	        case (byte) 0xCC: { // CALL Z, nn
-	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	            addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
 	            if (getFlag(7)) { // Zero flag is set
 	                SP -= 2;
 	                memory.write(SP, PC & 0xFF);
@@ -1000,7 +1003,7 @@ public class CPU {
 	        }
 
 	        case (byte) 0xD4: { // CALL NC, nn
-	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	            addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
 	            if (!getFlag(4)) { // Carry flag is not set
 	                SP -= 2;
 	                memory.write(SP, PC & 0xFF);
@@ -1014,7 +1017,7 @@ public class CPU {
 	        }
 
 	        case (byte) 0xDC: { // CALL C, nn
-	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	            addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
 	            if (getFlag(4)) { // Carry flag is set
 	                SP -= 2;
 	                memory.write(SP, PC & 0xFF);

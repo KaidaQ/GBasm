@@ -13,23 +13,7 @@ public class Emulator {
 		memory.write(0x120, 0x04); //simply increment the B register
 
 		//fill memory with ranInstruct
-		for(int i = 0x100; i < 0xFFFF; i++) {
-			if(Math.floor(Math.random() * 5)> 3) {
-				memory.write(i, 0x04);
-			}
-			if(Math.floor(Math.random() * 5)> 3) {
-				memory.write(i, 0x80);
-			}
-			if(Math.floor(Math.random() * 2048)> 2020) {
-				memory.write(i, 0x76);
-			}
-			if(Math.floor(Math.random() * 2048)> 2020) {
-				memory.write(i, 0xA9);
-			}
-			if(Math.floor(Math.random() * 2048)> 2020) {
-				memory.write(i, 0x05);
-			}
-		}
+		ranInstruct(cpu,memory);
 		
 		memory.write(0x02ff, 0x76);
 		System.out.println("init emulator;");
@@ -41,7 +25,7 @@ public class Emulator {
 		
 	}
 	
-	public static void ranInstruct(Memory memory) {
+	public static void ranInstruct(CPU cpu, Memory memory) {
 		for(int i = 0x100; i < 0xFFFF; i++) {
 			if(Math.floor(Math.random() * 5)> 3) {
 				memory.write(i, 0x04);
