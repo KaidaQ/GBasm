@@ -33,15 +33,6 @@ public class Emulator {
 			if(Math.floor(Math.random() * 5)> 3) {
 				memory.write(i, 0x80);
 			}
-			if(Math.floor(Math.random() * 2048)> 2020) {
-				memory.write(i, 0x76);
-			}
-			if(Math.floor(Math.random() * 2048)> 2020) {
-				memory.write(i, 0xA9);
-			}
-			if(Math.floor(Math.random() * 2048)> 2020) {
-				memory.write(i, 0x05);
-			}
 		}
 	}
 	
