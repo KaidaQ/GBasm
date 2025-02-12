@@ -129,130 +129,1018 @@ public class CPU {
 	 */
 	public void execute(byte opcode) {
 	    switch(opcode) {
-	    		//placeholder instruction
-	    	case (byte) 0x00: // NOP - No operation (commonly used as a placeholder)
-	    		System.out.println("NOP executed.");
-            	break;
-            	
-            	//CPU stop instructions
-	        case (byte) 0x76: //"HALT"
+	        // Placeholder instruction
+	        case (byte) 0x00: // NOP - No operation (commonly used as a placeholder)
+	            System.out.println("NOP executed.");
+	            break;
+
+	        // CPU stop instructions
+	        case (byte) 0x76: // HALT
 	            System.out.println("Halt instruction executed.");
 	            break;
-	            
-	            //Load instructions
+
+	        // Load instructions
 	        case (byte) 0x78: // LD A, B
 	            A = B;
 	            System.out.println("LD A, B executed: A = " + Integer.toHexString(A));
 	            break;
-	            
+
 	        case (byte) 0x02: // LD (BC), A
 	            memory.write(getBC(), (byte) A);
 	            System.out.println("LD (BC), A executed: (BC) = " + Integer.toHexString(A));
 	            break;
-	            
+
 	        case (byte) 0x79: // LD A, C
-	        	A = C;
-	        	System.out.println("LD A, B executed.");
-	        	break;
-	        	
+	            A = C;
+	            System.out.println("LD A, C executed.");
+	            break;
+
 	        case (byte) 0x7A: // LD A, D
-	        	A = D;
-	        	System.out.println("LD A, D executed.");
-	        	break;
-	        	
+	            A = D;
+	            System.out.println("LD A, D executed.");
+	            break;
+
 	        case (byte) 0x7B: // LD A, E
-	        	A = E;
-	        	System.out.println("LD A, E executed.");
-	        	break;
-	        	
+	            A = E;
+	            System.out.println("LD A, E executed.");
+	            break;
+
 	        case (byte) 0x7C: // LD A, H
-	        	A = H;
-	        	System.out.println("LD A, H executed.");
-	        	break;
-	        	
+	            A = H;
+	            System.out.println("LD A, H executed.");
+	            break;
+
 	        case (byte) 0x7D: // LD A, L
-	        	A = L;
-	        	System.out.println("LD A, L executed.");
-	        	break;
-	        	
+	            A = L;
+	            System.out.println("LD A, L executed.");
+	            break;
+
 	        case (byte) 0x7E: // LD A, (HL)
-	        	A = memory.read(getHL());
-	        	System.out.println("LD A, (HL) executed.");
-	        	break;
-	        	
-	        case (byte) 0x77: //LD (HL), A
-	        	memory.write(getHL(), A);
-	        	System.out.println("LD (HL), A executed.");
-	        	break;
-	        	
+	            A = memory.read(getHL());
+	            System.out.println("LD A, (HL) executed.");
+	            break;
+
+	        case (byte) 0x77: // LD (HL), A
+	            memory.write(getHL(), A);
+	            System.out.println("LD (HL), A executed.");
+	            break;
+
 	        case (byte) 0x3E: // LD A, (d8) - Load immediate value into A (using memory)
 	            A = memory.read(PC++);
 	            System.out.println("LD A, (d8) executed: A = " + Integer.toHexString(A));
 	            break;
-	            
+
 	        case (byte) 0xEA: // LD (a16), A
 	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
 	            memory.write(addr, (byte) A);
 	            System.out.println("LD (a16), A executed: (a16) = " + Integer.toHexString(addr) + ", A = " + Integer.toHexString(A));
 	            break;
-	            
-	        	// Arithmetic
+
+	        // Arithmetic instructions
 	        case (byte) 0x80: { // ADD A, B
 	            int result = A + B;
-	        	setFlag(7, (result & 0xFF) == 0);
-	        	setFlag(6, false);
-	        	setFlag(5, ((A & 0xF) + (B & 0xF)) > 0xF);
-	        	setFlag(4, result > 0xFF);
-	        	A = result & 0xFF;
+	            setFlag(7, (result & 0xFF) == 0);
+	            setFlag(6, false);
+	            setFlag(5, ((A & 0xF) + (B & 0xF)) > 0xF);
+	            setFlag(4, result > 0xFF);
+	            A = result & 0xFF;
 	            System.out.println("ADD A, B executed: A = " + Integer.toHexString(A));
 	            break;
 	        }
-	        
-	        case (byte) 0x81: {// ADD A, C
+
+	        case (byte) 0x81: { // ADD A, C
 	            int result = A + C;
-	        	setFlag(7, (result & 0xFF) == 0);
-	        	setFlag(6, false);
-	        	setFlag(5, ((A & 0xF) + (C & 0xF)) > 0xF);
-	        	setFlag(4, result > 0xFF);
-	        	A = result & 0xFF;
-	        	System.out.println("ADD A, C executed: A = " + Integer.toHexString(A));
+	            setFlag(7, (result & 0xFF) == 0);
+	            setFlag(6, false);
+	            setFlag(5, ((A & 0xF) + (C & 0xF)) > 0xF);
+	            setFlag(4, result > 0xFF);
+	            A = result & 0xFF;
+	            System.out.println("ADD A, C executed: A = " + Integer.toHexString(A));
 	            break;
 	        }
-	        
+
+	        case (byte) 0x82: { // ADD A, D
+	            int result = A + D;
+	            setFlag(7, (result & 0xFF) == 0);
+	            setFlag(6, false);
+	            setFlag(5, ((A & 0xF) + (D & 0xF)) > 0xF);
+	            setFlag(4, result > 0xFF);
+	            A = result & 0xFF;
+	            System.out.println("ADD A, D executed: A = " + Integer.toHexString(A));
+	            break;
+	        }
+
+	        case (byte) 0x83: { // ADD A, E
+	            int result = A + E;
+	            setFlag(7, (result & 0xFF) == 0);
+	            setFlag(6, false);
+	            setFlag(5, ((A & 0xF) + (E & 0xF)) > 0xF);
+	            setFlag(4, result > 0xFF);
+	            A = result & 0xFF;
+	            System.out.println("ADD A, E executed: A = " + Integer.toHexString(A));
+	            break;
+	        }
+
+	        case (byte) 0x84: { // ADD A, H
+	            int result = A + H;
+	            setFlag(7, (result & 0xFF) == 0);
+	            setFlag(6, false);
+	            setFlag(5, ((A & 0xF) + (H & 0xF)) > 0xF);
+	            setFlag(4, result > 0xFF);
+	            A = result & 0xFF;
+	            System.out.println("ADD A, H executed: A = " + Integer.toHexString(A));
+	            break;
+	        }
+
+	        case (byte) 0x85: { // ADD A, L
+	            int result = A + L;
+	            setFlag(7, (result & 0xFF) == 0);
+	            setFlag(6, false);
+	            setFlag(5, ((A & 0xF) + (L & 0xF)) > 0xF);
+	            setFlag(4, result > 0xFF);
+	            A = result & 0xFF;
+	            System.out.println("ADD A, L executed: A = " + Integer.toHexString(A));
+	            break;
+	        }
+
+	        case (byte) 0x86: { // ADD A, (HL)
+	            int value = memory.read(getHL());
+	            int result = A + value;
+	            setFlag(7, (result & 0xFF) == 0);
+	            setFlag(6, false);
+	            setFlag(5, ((A & 0xF) + (value & 0xF)) > 0xF);
+	            setFlag(4, result > 0xFF);
+	            A = result & 0xFF;
+	            System.out.println("ADD A, (HL) executed: A = " + Integer.toHexString(A));
+	            break;
+	        }
+
+	        case (byte) 0xC6: { // ADD A, d8
+	            int value = memory.read(PC++);
+	            int result = A + value;
+	            setFlag(7, (result & 0xFF) == 0);
+	            setFlag(6, false);
+	            setFlag(5, ((A & 0xF) + (value & 0xF)) > 0xF);
+	            setFlag(4, result > 0xFF);
+	            A = result & 0xFF;
+	            System.out.println("ADD A, d8 executed: A = " + Integer.toHexString(A));
+	            break;
+	        }
+
 	        case (byte) 0x90: // SUB A, B
 	            A -= B;
-	        	System.out.println("SUB A, B executed: A = " + Integer.toHexString(A));
-	        	break;
-	        	
-	        case (byte) 0x91: // SUB A, C
-	        	A -= C;
-	        	System.out.println("SUB A, C executed: C = " + Integer.toHexString(A));
-	        	break;
-	        	
-	        	//logical opcodes
-	        case (byte) 0xA0: // AND A, B
-	        	A = A & B;
-	        	System.out.println("AND A, B executed:");
-	        	break;
-	        	
-	        case (byte) 0xA9: // XOR A, C
-	        	A = A ^ C;
-	        	System.out.println("XOR A, C executed:");
-	        	break;
-	        	
-	        case (byte) 0xB2: // OR A, D
-	        	A = A | D;
-	        	System.out.println("OR A, D");
-	        	break;
+	            setFlag(7, A == 0);
+	            setFlag(6, true);
+	            setFlag(5, (A & 0xF) > (B & 0xF));
+	            setFlag(4, A < 0);
+	            A &= 0xFF;
+	            System.out.println("SUB A, B executed: A = " + Integer.toHexString(A));
+	            break;
 
-	            //increment / decrement opcodes
-	        case (byte) 0x04: //INC B
-	        	B++;
+	        case (byte) 0x91: // SUB A, C
+	            A -= C;
+	            setFlag(7, A == 0);
+	            setFlag(6, true);
+	            setFlag(5, (A & 0xF) > (C & 0xF));
+	            setFlag(4, A < 0);
+	            A &= 0xFF;
+	            System.out.println("SUB A, C executed: A = " + Integer.toHexString(A));
+	            break;
+
+	        case (byte) 0x92: // SUB A, D
+	            A -= D;
+	            setFlag(7, A == 0);
+	            setFlag(6, true);
+	            setFlag(5, (A & 0xF) > (D & 0xF));
+	            setFlag(4, A < 0);
+	            A &= 0xFF;
+	            System.out.println("SUB A, D executed: A = " + Integer.toHexString(A));
+	            break;
+
+	        case (byte) 0x93: // SUB A, E
+	            A -= E;
+	            setFlag(7, A == 0);
+	            setFlag(6, true);
+	            setFlag(5, (A & 0xF) > (E & 0xF));
+	            setFlag(4, A < 0);
+	            A &= 0xFF;
+	            System.out.println("SUB A, E executed: A = " + Integer.toHexString(A));
+	            break;
+
+	        case (byte) 0x94: // SUB A, H
+	            A -= H;
+	            setFlag(7, A == 0);
+	            setFlag(6, true);
+	            setFlag(5, (A & 0xF) > (H & 0xF));
+	            setFlag(4, A < 0);
+	            A &= 0xFF;
+	            System.out.println("SUB A, H executed: A = " + Integer.toHexString(A));
+	            break;
+
+	        case (byte) 0x95: // SUB A, L
+	            A -= L;
+	            setFlag(7, A == 0);
+	            setFlag(6, true);
+	            setFlag(5, (A & 0xF) > (L & 0xF));
+	            setFlag(4, A < 0);
+	            A &= 0xFF;
+	            System.out.println("SUB A, L executed: A = " + Integer.toHexString(A));
+	            break;
+
+	        case (byte) 0x96: { // SUB A, (HL)
+	            int value = memory.read(getHL());
+	            A -= value;
+	            setFlag(7, A == 0);
+	            setFlag(6, true);
+	            setFlag(5, (A & 0xF) > (value & 0xF));
+	            setFlag(4, A < 0);
+	            A &= 0xFF;
+	            System.out.println("SUB A, (HL) executed: A = " + Integer.toHexString(A));
+	            break;
+	        }
+
+	        case (byte) 0xD6: { // SUB A, d8
+	            int value = memory.read(PC++);
+	            A -= value;
+	            setFlag(7, A == 0);
+	            setFlag(6, true);
+	            setFlag(5, (A & 0xF) > (value & 0xF));
+	            setFlag(4, A < 0);
+	            A &= 0xFF;
+	            System.out.println("SUB A, d8 executed: A = " + Integer.toHexString(A));
+	            break;
+	        }
+
+	        // Logical instructions
+	        case (byte) 0xA0: // AND A, B
+	            A = A & B;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, true);
+	            setFlag(4, false);
+	            System.out.println("AND A, B executed.");
+	            break;
+
+	        case (byte) 0xA1: // AND A, C
+	            A = A & C;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, true);
+	            setFlag(4, false);
+	            System.out.println("AND A, C executed.");
+	            break;
+
+	        case (byte) 0xA2: // AND A, D
+	            A = A & D;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, true);
+	            setFlag(4, false);
+	            System.out.println("AND A, D executed.");
+	            break;
+
+	        case (byte) 0xA3: // AND A, E
+	            A = A & E;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, true);
+	            setFlag(4, false);
+	            System.out.println("AND A, E executed.");
+	            break;
+
+	        case (byte) 0xA4: // AND A, H
+	            A = A & H;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, true);
+	            setFlag(4, false);
+	            System.out.println("AND A, H executed.");
+	            break;
+
+	        case (byte) 0xA5: // AND A, L
+	            A = A & L;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, true);
+	            setFlag(4, false);
+	            System.out.println("AND A, L executed.");
+	            break;
+
+	        case (byte) 0xA6: { // AND A, (HL)
+	            int value = memory.read(getHL());
+	            A = A & value;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, true);
+	            setFlag(4, false);
+	            System.out.println("AND A, (HL) executed.");
+	            break;
+	        }
+
+	        case (byte) 0xE6: { // AND A, d8
+	            int value = memory.read(PC++);
+	            A = A & value;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, true);
+	            setFlag(4, false);
+	            System.out.println("AND A, d8 executed.");
+	            break;
+	        }
+
+	        case (byte) 0xA8: // XOR A, B
+	            A = A ^ B;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, false);
+	            setFlag(4, false);
+	            System.out.println("XOR A, B executed.");
+	            break;
+
+	        case (byte) 0xA9: // XOR A, C
+	            A = A ^ C;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, false);
+	            setFlag(4, false);
+	            System.out.println("XOR A, C executed.");
+	            break;
+
+	        case (byte) 0xAA: // XOR A, D
+	            A = A ^ D;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, false);
+	            setFlag(4, false);
+	            System.out.println("XOR A, D executed.");
+	            break;
+
+	        case (byte) 0xAB: // XOR A, E
+	            A = A ^ E;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, false);
+	            setFlag(4, false);
+	            System.out.println("XOR A, E executed.");
+	            break;
+
+	        case (byte) 0xAC: // XOR A, H
+	            A = A ^ H;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, false);
+	            setFlag(4, false);
+	            System.out.println("XOR A, H executed.");
+	            break;
+
+	        case (byte) 0xAD: // XOR A, L
+	            A = A ^ L;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, false);
+	            setFlag(4, false);
+	            System.out.println("XOR A, L executed.");
+	            break;
+
+	        case (byte) 0xAE: { // XOR A, (HL)
+	            int value = memory.read(getHL());
+	            A = A ^ value;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, false);
+	            setFlag(4, false);
+	            System.out.println("XOR A, (HL) executed.");
+	            break;
+	        }
+
+	        case (byte) 0xEE: { // XOR A, d8
+	            int value = memory.read(PC++);
+	            A = A ^ value;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, false);
+	            setFlag(4, false);
+	            System.out.println("XOR A, d8 executed.");
+	            break;
+	        }
+
+	        case (byte) 0xB0: // OR A, B
+	            A = A | B;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, false);
+	            setFlag(4, false);
+	            System.out.println("OR A, B executed.");
+	            break;
+
+	        case (byte) 0xB1: // OR A, C
+	            A = A | C;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, false);
+	            setFlag(4, false);
+	            System.out.println("OR A, C executed.");
+	            break;
+
+	        case (byte) 0xB2: // OR A, D
+	            A = A | D;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, false);
+	            setFlag(4, false);
+	            System.out.println("OR A, D executed.");
+	            break;
+
+	        case (byte) 0xB3: // OR A, E
+	            A = A | E;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, false);
+	            setFlag(4, false);
+	            System.out.println("OR A, E executed.");
+	            break;
+
+	        case (byte) 0xB4: // OR A, H
+	            A = A | H;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, false);
+	            setFlag(4, false);
+	            System.out.println("OR A, H executed.");
+	            break;
+
+	        case (byte) 0xB5: // OR A, L
+	            A = A | L;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, false);
+	            setFlag(4, false);
+	            System.out.println("OR A, L executed.");
+	            break;
+
+	        case (byte) 0xB6: // OR A, (HL)
+	            int value = memory.read(getHL());
+	            A = A | value;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, false);
+	            setFlag(4, false);
+	            System.out.println("OR A, (HL) executed.");
+	            break;
+
+	        case (byte) 0xF6: // OR A, d8
+	            value = memory.read(PC++);
+	            A = A | value;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, false);
+	            setFlag(4, false);
+	            System.out.println("OR A, d8 executed.");
+	            break;
+
+	        case (byte) 0xB7: // CP A, A
+	            setFlag(7, A == 0);
+	            setFlag(6, true);
+	            setFlag(5, false);
+	            setFlag(4, false);
+	            System.out.println("CP A, A executed.");
+	            break;
+
+	        case (byte) 0xB8: // CP A, B
+	            setFlag(7, A == B);
+	            setFlag(6, true);
+	            setFlag(5, (A & 0xF) < (B & 0xF));
+	            setFlag(4, A < B);
+	            System.out.println("CP A, B executed.");
+	            break;
+
+	        case (byte) 0xB9: // CP A, C
+	            setFlag(7, A == C);
+	            setFlag(6, true);
+	            setFlag(5, (A & 0xF) < (C & 0xF));
+	            setFlag(4, A < C);
+	            System.out.println("CP A, C executed.");
+	            break;
+
+	        case (byte) 0xBA: // CP A, D
+	            setFlag(7, A == D);
+	            setFlag(6, true);
+	            setFlag(5, (A & 0xF) < (D & 0xF));
+	            setFlag(4, A < D);
+	            System.out.println("CP A, D executed.");
+	            break;
+
+	        case (byte) 0xBB: // CP A, E
+	            setFlag(7, A == E);
+	            setFlag(6, true);
+	            setFlag(5, (A & 0xF) < (E & 0xF));
+	            setFlag(4, A < E);
+	            System.out.println("CP A, E executed.");
+	            break;
+
+	        case (byte) 0xBC: // CP A, H
+	            setFlag(7, A == H);
+	            setFlag(6, true);
+	            setFlag(5, (A & 0xF) < (H & 0xF));
+	            setFlag(4, A < H);
+	            System.out.println("CP A, H executed.");
+	            break;
+
+	        case (byte) 0xBD: // CP A, L
+	            setFlag(7, A == L);
+	            setFlag(6, true);
+	            setFlag(5, (A & 0xF) < (L & 0xF));
+	            setFlag(4, A < L);
+	            System.out.println("CP A, L executed.");
+	            break;
+
+	        case (byte) 0xBE: // CP A, (HL)
+	            value = memory.read(getHL());
+	            setFlag(7, A == value);
+	            setFlag(6, true);
+	            setFlag(5, (A & 0xF) < (value & 0xF));
+	            setFlag(4, A < value);
+	            System.out.println("CP A, (HL) executed.");
+	            break;
+
+	        case (byte) 0xFE: // CP A, d8
+	            value = memory.read(PC++);
+	            setFlag(7, A == value);
+	            setFlag(6, true);
+	            setFlag(5, (A & 0xF) < (value & 0xF));
+	            setFlag(4, A < value);
+	            System.out.println("CP A, d8 executed.");
+	            break;
+
+	        // Increment/Decrement instructions
+	        case (byte) 0x04: // INC B
+	            B++;
+	            setFlag(7, B == 0);
+	            setFlag(6, false);
+	            setFlag(5, (B & 0xF) == 0);
 	            System.out.println("INC B executed: B = " + Integer.toHexString(B & 0xFF));
 	            break;
-	        case (byte) 0x05: //DEC B
-	        	B--;
-	        	System.out.println("DEC B executed: B = " + Integer .toHexString(B & 0xFF));
+
+	        case (byte) 0x05: // DEC B
+	            B--;
+	            setFlag(7, B == 0);
+	            setFlag(6, true);
+	            setFlag(5, (B & 0xF) == 0xF);
+	            System.out.println("DEC B executed: B = " + Integer.toHexString(B & 0xFF));
+	            break;
+
+	        case (byte) 0x0C: // INC C
+	            C++;
+	            setFlag(7, C == 0);
+	            setFlag(6, false);
+	            setFlag(5, (C & 0xF) == 0);
+	            System.out.println("INC C executed: C = " + Integer.toHexString(C & 0xFF));
+	            break;
+
+	        case (byte) 0x0D: // DEC C
+	            C--;
+	            setFlag(7, C == 0);
+	            setFlag(6, true);
+	            setFlag(5, (C & 0xF) == 0xF);
+	            System.out.println("DEC C executed: C = " + Integer.toHexString(C & 0xFF));
+	            break;
+
+	        case (byte) 0x14: // INC D
+	            D++;
+	            setFlag(7, D == 0);
+	            setFlag(6, false);
+	            setFlag(5, (D & 0xF) == 0);
+	            System.out.println("INC D executed: D = " + Integer.toHexString(D & 0xFF));
+	            break;
+
+	        case (byte) 0x15: // DEC D
+	            D--;
+	            setFlag(7, D == 0);
+	            setFlag(6, true);
+	            setFlag(5, (D & 0xF) == 0xF);
+	            System.out.println("DEC D executed: D = " + Integer.toHexString(D & 0xFF));
+	            break;
+
+	        case (byte) 0x1C: // INC E
+	            E++;
+	            setFlag(7, E == 0);
+	            setFlag(6, false);
+	            setFlag(5, (E & 0xF) == 0);
+	            System.out.println("INC E executed: E = " + Integer.toHexString(E & 0xFF));
+	            break;
+
+	        case (byte) 0x1D: // DEC E
+	            E--;
+	            setFlag(7, E == 0);
+	            setFlag(6, true);
+	            setFlag(5, (E & 0xF) == 0xF);
+	            System.out.println("DEC E executed: E = " + Integer.toHexString(E & 0xFF));
+	            break;
+
+	        case (byte) 0x24: // INC H
+	            H++;
+	            setFlag(7, H == 0);
+	            setFlag(6, false);
+	            setFlag(5, (H & 0xF) == 0);
+	            System.out.println("INC H executed: H = " + Integer.toHexString(H & 0xFF));
+	            break;
+
+	        case (byte) 0x25: // DEC H
+	            H--;
+	            setFlag(7, H == 0);
+	            setFlag(6, true);
+	            setFlag(5, (H & 0xF) == 0xF);
+	            System.out.println("DEC H executed: H = " + Integer.toHexString(H & 0xFF));
+	            break;
+
+	        case (byte) 0x2C: // INC L
+	            L++;
+	            setFlag(7, L == 0);
+	            setFlag(6, false);
+	            setFlag(5, (L & 0xF) == 0);
+	            System.out.println("INC L executed: L = " + Integer.toHexString(L & 0xFF));
+	            break;
+
+	        case (byte) 0x2D: // DEC L
+	            L--;
+	            setFlag(7, L == 0);
+	            setFlag(6, true);
+	            setFlag(5, (L & 0xF) == 0xF);
+	            System.out.println("DEC L executed: L = " + Integer.toHexString(L & 0xFF));
+	            break;
+
+	        case (byte) 0x34: // INC (HL)
+	            value = memory.read(getHL()) + 1;
+	            memory.write(getHL(), value & 0xFF);
+	            setFlag(7, value == 0);
+	            setFlag(6, false);
+	            setFlag(5, (value & 0xF) == 0);
+	            System.out.println("INC (HL) executed: (HL) = " + Integer.toHexString(value & 0xFF));
+	            break;
+
+	        case (byte) 0x35: // DEC (HL)
+	            value = memory.read(getHL()) - 1;
+	            memory.write(getHL(), value & 0xFF);
+	            setFlag(7, value == 0);
+	            setFlag(6, true);
+	            setFlag(5, (value & 0xF) == 0xF);
+	            System.out.println("DEC (HL) executed: (HL) = " + Integer.toHexString(value & 0xFF));
+	            break;
+
+	        case (byte) 0x3C: // INC A
+	            A++;
+	            setFlag(7, A == 0);
+	            setFlag(6, false);
+	            setFlag(5, (A & 0xF) == 0);
+	            System.out.println("INC A executed: A = " + Integer.toHexString(A & 0xFF));
+	            break;
+
+	        case (byte) 0x3D: // DEC A
+	            A--;
+	            setFlag(7, A == 0);
+	            setFlag(6, true);
+	            setFlag(5, (A & 0xF) == 0xF);
+	            System.out.println("DEC A executed: A = " + Integer.toHexString(A & 0xFF));
+	            break;
+
+	        // Miscellaneous instructions
+	        case (byte) 0x27: // DAA
+	            if (!getFlag(6)) { // After an addition
+	                if (getFlag(4) || (A > 0x99)) {
+	                    A += 0x60;
+	                    setFlag(4, true);
+	                }
+	                if (getFlag(5) || ((A & 0x0F) > 0x09)) {
+	                    A += 0x06;
+	                }
+	            } else { // After a subtraction
+	                if (getFlag(4)) {
+	                    A -= 0x60;
+	                }
+	                if (getFlag(5)) {
+	                    A -= 0x06;
+	                }
+	            }
+	            setFlag(7, (A & 0xFF) == 0);
+	            setFlag(5, false);
+	            A &= 0xFF;
+	            System.out.println("DAA executed: A = " + Integer.toHexString(A & 0xFF));
+	            break;
+
+	        case (byte) 0x2F: // CPL
+	            A = ~A;
+	            setFlag(6, true);
+	            setFlag(5, true);
+	            System.out.println("CPL executed: A = " + Integer.toHexString(A & 0xFF));
+	            break;
+
+	        case (byte) 0x37: // SCF
+	            setFlag(6, false);
+	            setFlag(5, false);
+	            setFlag(4, true);
+	            System.out.println("SCF executed.");
+	            break;
+
+	        case (byte) 0x3F: // CCF
+	            setFlag(6, false);
+	            setFlag(5, false);
+	            setFlag(4, !getFlag(4));
+	            System.out.println("CCF executed.");
+	            break;
+
+	        // Jump instructions
+	        case (byte) 0xC3: { // JP nn
+	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	            PC = addr;
+	            System.out.println("JP nn executed: PC = " + Integer.toHexString(PC));
+	            break;
+	        }
+
+	        case (byte) 0xC2: { // JP NZ, nn
+	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	            if (!getFlag(7)) { // Zero flag is not set
+	                PC = addr;
+	                System.out.println("JP NZ, nn executed: PC = " + Integer.toHexString(PC));
+	            } else {
+	                System.out.println("JP NZ, nn not taken.");
+	            }
+	            break;
+	        }
+
+	        case (byte) 0xCA: { // JP Z, nn
+	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	            if (getFlag(7)) { // Zero flag is set
+	                PC = addr;
+	                System.out.println("JP Z, nn executed: PC = " + Integer.toHexString(PC));
+	            } else {
+	                System.out.println("JP Z, nn not taken.");
+	            }
+	            break;
+	        }
+
+	        case (byte) 0xD2: { // JP NC, nn
+	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	            if (!getFlag(4)) { // Carry flag is not set
+	                PC = addr;
+	                System.out.println("JP NC, nn executed: PC = " + Integer.toHexString(PC));
+	            } else {
+	                System.out.println("JP NC, nn not taken.");
+	            }
+	            break;
+	        }
+
+	        case (byte) 0xDA: { // JP C, nn
+	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	            if (getFlag(4)) { // Carry flag is set
+	                PC = addr;
+	                System.out.println("JP C, nn executed: PC = " + Integer.toHexString(PC));
+	            } else {
+	                System.out.println("JP C, nn not taken.");
+	            }
+	            break;
+	        }
+
+	        case (byte) 0xE9: // JP (HL)
+	            PC = getHL();
+	            System.out.println("JP (HL) executed: PC = " + Integer.toHexString(PC));
+	            break;
+
+	        case (byte) 0x18: { // JR n
+	            int offset = memory.read(PC++);
+	            if (offset > 127) offset -= 256; // Convert to signed
+	            PC += offset;
+	            System.out.println("JR n executed: PC = " + Integer.toHexString(PC));
+	            break;
+	        }
+
+	        case (byte) 0x20: { // JR NZ, n
+	            int offset = memory.read(PC++);
+	            if (offset > 127) offset -= 256; // Convert to signed
+	            if (!getFlag(7)) { // Zero flag is not set
+	                PC += offset;
+	                System.out.println("JR NZ, n executed: PC = " + Integer.toHexString(PC));
+	            } else {
+	                System.out.println("JR NZ, n not taken.");
+	            }
+	            break;
+	        }
+
+	        case (byte) 0x28: { // JR Z, n
+	            int offset = memory.read(PC++);
+	            if (offset > 127) offset -= 256; // Convert to signed
+	            if (getFlag(7)) { // Zero flag is set
+	                PC += offset;
+	                System.out.println("JR Z, n executed: PC = " + Integer.toHexString(PC));
+	            } else {
+	                System.out.println("JR Z, n not taken.");
+	            }
+	            break;
+	        }
+
+	        case (byte) 0x30: { // JR NC, n
+	            int offset = memory.read(PC++);
+	            if (offset > 127) offset -= 256; // Convert to signed
+	            if (!getFlag(4)) { // Carry flag is not set
+	                PC += offset;
+	                System.out.println("JR NC, n executed: PC = " + Integer.toHexString(PC));
+	            } else {
+	                System.out.println("JR NC, n not taken.");
+	            }
+	            break;
+	        }
+
+	        case (byte) 0x38: { // JR C, n
+	            int offset = memory.read(PC++);
+	            if (offset > 127) offset -= 256; // Convert to signed
+	            if (getFlag(4)) { // Carry flag is set
+	                PC += offset;
+	                System.out.println("JR C, n executed: PC = " + Integer.toHexString(PC));
+	            } else {
+	                System.out.println("JR C, n not taken.");
+	            }
+	            break;
+	        }
+
+	        case (byte) 0xCD: { // CALL nn
+	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	            SP -= 2;
+	            memory.write(SP, PC & 0xFF);
+	            memory.write(SP + 1, (PC >> 8) & 0xFF);
+	            PC = addr;
+	            System.out.println("CALL nn executed: PC = " + Integer.toHexString(PC));
+	            break;
+	        }
+
+	        case (byte) 0xC4: { // CALL NZ, nn
+	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	            if (!getFlag(7)) { // Zero flag is not set
+	                SP -= 2;
+	                memory.write(SP, PC & 0xFF);
+	                memory.write(SP + 1, (PC >> 8) & 0xFF);
+	                PC = addr;
+	                System.out.println("CALL NZ, nn executed: PC = " + Integer.toHexString(PC));
+	            } else {
+	                System.out.println("CALL NZ, nn not taken.");
+	            }
+	            break;
+	        }
+
+	        case (byte) 0xCC: { // CALL Z, nn
+	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	            if (getFlag(7)) { // Zero flag is set
+	                SP -= 2;
+	                memory.write(SP, PC & 0xFF);
+	                memory.write(SP + 1, (PC >> 8) & 0xFF);
+	                PC = addr;
+	                System.out.println("CALL Z, nn executed: PC = " + Integer.toHexString(PC));
+	            } else {
+	                System.out.println("CALL Z, nn not taken.");
+	            }
+	            break;
+	        }
+
+	        case (byte) 0xD4: { // CALL NC, nn
+	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	            if (!getFlag(4)) { // Carry flag is not set
+	                SP -= 2;
+	                memory.write(SP, PC & 0xFF);
+	                memory.write(SP + 1, (PC >> 8) & 0xFF);
+	                PC = addr;
+	                System.out.println("CALL NC, nn executed: PC = " + Integer.toHexString(PC));
+	            } else {
+	                System.out.println("CALL NC, nn not taken.");
+	            }
+	            break;
+	        }
+
+	        case (byte) 0xDC: { // CALL C, nn
+	            int addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	            if (getFlag(4)) { // Carry flag is set
+	                SP -= 2;
+	                memory.write(SP, PC & 0xFF);
+	                memory.write(SP + 1, (PC >> 8) & 0xFF);
+	                PC = addr;
+	                System.out.println("CALL C, nn executed: PC = " + Integer.toHexString(PC));
+	            } else {
+	                System.out.println("CALL C, nn not taken.");
+	            }
+	            break;
+	        }
+
+	        // Return instructions
+	        case (byte) 0xC9: { // RET
+	            PC = (memory.read(SP++) & 0xFF) | ((memory.read(SP++) & 0xFF) << 8);
+	            System.out.println("RET executed: PC = " + Integer.toHexString(PC));
+	            break;
+	        }
+
+	        case (byte) 0xC0: // RET NZ
+	            if (!getFlag(7)) { // Zero flag is not set
+	                PC = (memory.read(SP++) & 0xFF) | ((memory.read(SP++) & 0xFF) << 8);
+	                System.out.println("RET NZ executed: PC = " + Integer.toHexString(PC));
+	            } else {
+	                System.out.println("RET NZ not taken.");
+	            }
+	            break;
+
+	        case (byte) 0xC8: // RET Z
+	            if (getFlag(7)) { // Zero flag is set
+	                PC = (memory.read(SP++) & 0xFF) | ((memory.read(SP++) & 0xFF) << 8);
+	                System.out.println("RET Z executed: PC = " + Integer.toHexString(PC));
+	            } else {
+	                System.out.println("RET Z not taken.");
+	            }
+	            break;
+
+	        case (byte) 0xD0: // RET NC
+	            if (!getFlag(4)) { // Carry flag is not set
+	                PC = (memory.read(SP++) & 0xFF) | ((memory.read(SP++) & 0xFF) << 8);
+	                System.out.println("RET NC executed: PC = " + Integer.toHexString(PC));
+	            } else {
+	                System.out.println("RET NC not taken.");
+	            }
+	            break;
+
+	        case (byte) 0xD8: // RET C
+	            if (getFlag(4)) { // Carry flag is set
+	                PC = (memory.read(SP++) & 0xFF) | ((memory.read(SP++) & 0xFF) << 8);
+	                System.out.println("RET C executed: PC = " + Integer.toHexString(PC));
+	            } else {
+	                System.out.println("RET C not taken.");
+	            }
+	            break;
+
+	        case (byte) 0xD9: { // RETI
+	            PC = (memory.read(SP++) & 0xFF) | ((memory.read(SP++) & 0xFF) << 8);
+	            ime = true; // Enable interrupts
+	            System.out.println("RETI executed: PC = " + Integer.toHexString(PC));
+	            break;
+	        }
+
+	        // Restart instructions
+	        case (byte) 0xC7: // RST 00H
+	            SP -= 2;
+	            memory.write(SP, PC & 0xFF);
+	            memory.write(SP + 1, (PC >> 8) & 0xFF);
+	            PC = 0x00;
+	            System.out.println("RST 00H executed.");
+	            break;
+
+	        case (byte) 0xCF: // RST 08H
+	            SP -= 2;
+	            memory.write(SP, PC & 0xFF);
+	            memory.write(SP + 1, (PC >> 8) & 0xFF);
+	            PC = 0x08;
+	            System.out.println("RST 08H executed.");
+	            break;
+
+	        case (byte) 0xD7: // RST 10H
+	            SP -= 2;
+	            memory.write(SP, PC & 0xFF);
+	            memory.write(SP + 1, (PC >> 8) & 0xFF);
+	            PC = 0x10;
+	            System.out.println("RST 10H executed.");
+	            break;
+
+	        case (byte) 0xDF: // RST 18H
+	            SP -= 2;
+	            memory.write(SP, PC & 0xFF);
+	            memory.write(SP + 1, (PC >> 8) & 0xFF);
+	            PC = 0x18;
+	            System.out.println("RST 18H executed.");
+	            break;
+
+	        case (byte) 0xE7: // RST 20H
+	            SP -= 2;
+	            memory.write(SP, PC & 0xFF);
+	            memory.write(SP + 1, (PC >> 8) & 0xFF);
+	            PC = 0x20;
+	            System.out.println("RST 20H executed.");
+	            break;
+
+	        case (byte) 0xEF: // RST 28H
+	            SP -= 2;
+	            memory.write(SP, PC & 0xFF);
+	            memory.write(SP + 1, (PC >> 8) & 0xFF);
+	            PC = 0x28;
+	            System.out.println("RST 28H executed.");
+	            break;
+
+	        case (byte) 0xF7: // RST 30H
+	            SP -= 2;
+	            memory.write(SP, PC & 0xFF);
+	            memory.write(SP + 1, (PC >> 8) & 0xFF);
+	            PC = 0x30;
+	            System.out.println("RST 30H executed.");
+	            break;
+
+	        case (byte) 0xFF: // RST 38H
+	            SP -= 2;
+	            memory.write(SP, PC & 0xFF);
+	            memory.write(SP + 1, (PC >> 8) & 0xFF);
+	            PC = 0x38;
+	            System.out.println("RST 38H executed.");
+	            break;
 	            
 	        	//default case (unknown opcode)
 	        default:

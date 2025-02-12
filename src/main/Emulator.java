@@ -9,27 +9,25 @@ public class Emulator {
 		CPU cpu = new CPU();
 		
 		cpu.setMemory(memory);
-		memory.write(0xFFFF, 0x76);
+		memory.write(0xFFFF, 0x76); //halt at the end of memory
 		memory.write(0x120, 0x04); //simply increment the B register
-		
-		int start = memory.read(0x100) & 0xFF;
-		int end = memory.read(0x150) & 0xFF;
-		
+
+		//fill memory with ranInstruct
 		for(int i = 0x100; i < 0xFFFF; i++) {
 			if(Math.floor(Math.random() * 5)> 3) {
 				memory.write(i, 0x04);
-
-
 			}
 			if(Math.floor(Math.random() * 5)> 3) {
 				memory.write(i, 0x80);
-				
-
 			}
 			if(Math.floor(Math.random() * 2048)> 2020) {
 				memory.write(i, 0x76);
-				
-
+			}
+			if(Math.floor(Math.random() * 2048)> 2020) {
+				memory.write(i, 0xA9);
+			}
+			if(Math.floor(Math.random() * 2048)> 2020) {
+				memory.write(i, 0x05);
 			}
 		}
 		
@@ -41,6 +39,26 @@ public class Emulator {
 
 		
 		
+	}
+	
+	public static void ranInstruct(Memory memory) {
+		for(int i = 0x100; i < 0xFFFF; i++) {
+			if(Math.floor(Math.random() * 5)> 3) {
+				memory.write(i, 0x04);
+			}
+			if(Math.floor(Math.random() * 5)> 3) {
+				memory.write(i, 0x80);
+			}
+			if(Math.floor(Math.random() * 2048)> 2020) {
+				memory.write(i, 0x76);
+			}
+			if(Math.floor(Math.random() * 2048)> 2020) {
+				memory.write(i, 0xA9);
+			}
+			if(Math.floor(Math.random() * 2048)> 2020) {
+				memory.write(i, 0x05);
+			}
+		}
 	}
 	
 	public static void testOpcode(CPU cpu, Memory memory) {
