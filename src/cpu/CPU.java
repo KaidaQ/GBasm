@@ -184,12 +184,19 @@ public class CPU {
 	            A = memory.read(getHL());
 	            System.out.println("LD A, (HL) executed.");
 	            break;
-
+	        case (byte) 0x66:
+	        	H = memory.read(getHL()); //LD H, (HL)
+	        	System.out.println("LD H, (HL) executed : " + Integer.toHexString(H));
+	        	break;
 	        case (byte) 0x77: // LD (HL), A
 	            memory.write(getHL(), A);
 	            System.out.println("LD (HL), A executed.");
 	            break;
-
+	            //0xED is a invalid operation in the gameboy z80, but a full z80 would use it. this is just here so its outputting "illegal action : 0xED"
+	        case (byte) 0xED:
+	        	System.out.println("0xED appears in every Game Boy rom, at byte $105.");
+	        	break;
+	        	
 	        case (byte) 0x3E: // LD A, (d8) - Load immediate value into A (using memory)
 	            A = memory.read(PC++);
 	            System.out.println("LD A, (d8) executed: A = " + Integer.toHexString(A));
