@@ -113,6 +113,7 @@ public class CPU {
     public int getF() {
         return F;
     }
+    
 	/**
 	 * fetch the instructions
 	 * @return
@@ -128,7 +129,7 @@ public class CPU {
 	 * decode and execute the instruction
 	 * @param opcode
 	 */
-	public void execute(byte opcode) {
+	public void execute(byte opcode) { //oh god
 		int addr;
 		int value;
 		int result;
@@ -193,8 +194,13 @@ public class CPU {
 	            A = memory.read(PC++);
 	            System.out.println("LD A, (d8) executed: A = " + Integer.toHexString(A));
 	            break;
-
-	        case (byte) 0xEA: // LD (a16), A
+	            
+	        case (byte) 0x06:
+	        	B = memory.read(PC++);
+	        	System.out.println("LD B, (d8) executed: B = " + Integer.toHexString(B));
+	        	break;
+	        	
+ 	        case (byte) 0xEA: // LD (a16), A
 	            addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
 	            memory.write(addr, (byte) A);
 	            System.out.println("LD (a16), A executed: (a16) = " + Integer.toHexString(addr) + ", A = " + Integer.toHexString(A));
@@ -995,7 +1001,9 @@ public class CPU {
 	                memory.write(SP, PC & 0xFF);
 	                memory.write(SP + 1, (PC >> 8) & 0xFF);
 	                PC = addr;
-	                System.out.println("CALL Z, nn executed: PC = " + Integer.toHexString(PC));
+	                System.out.println("CALL Z, nn executed: PC = " + Integer.toHexString(PC) + " CALL Z, nn target address: " + Integer.toHexString(addr));
+	                System.out.println("CALL Z, nn low byte: " + Integer.toHexString(memory.read(PC) & 0xFF));
+	                System.out.println("CALL Z, nn high byte: " + Integer.toHexString(memory.read(PC + 1) & 0xFF));
 	            } else {
 	                System.out.println("CALL Z, nn not taken.");
 	            }

@@ -5,24 +5,19 @@ import memory.Memory;
 
 public class Emulator {
 	public static void main(String[] args) {
-		Memory memory = new Memory();
-		CPU cpu = new CPU();
+		Memory memory = new Memory(); //set virtual ram
+		memory.loadROM("test.gb");
 		
+		CPU cpu = new CPU();
 		cpu.setMemory(memory);
-		memory.write(0xFFFF, 0x76); //halt at the end of memory
-		memory.write(0x120, 0x04); //simply increment the B register
 
 		//fill memory with ranInstruct
-		ranInstruct(cpu,memory);
 		
-		memory.write(0x02ff, 0x76);
 		System.out.println("init emulator;");
 		System.out.println("cpu starting: " + Integer.toHexString(cpu.getAF()));
-		//testOpcode(cpu, memory);
+		
+		//testOpcode(CPU, memory);
 		runCPU(cpu);
-
-		
-		
 	}
 	
 	public static void ranInstruct(CPU cpu, Memory memory) {
@@ -61,7 +56,7 @@ public class Emulator {
 		    cpu.execute(opcode);  // Execute the opcode
 		    
 		    instructionCount++;
-		    if (instructionCount > 0xFFFF) { // To avoid infinite loops during testing
+		    if (instructionCount > 0x7) { // To avoid infinite loops during testing
 		        System.out.println("Instruction count exceeded, breaking the loop.");
 		        System.out.println("Final val in B: " + "0x" + Integer.toHexString(cpu.getB()));
 		        
