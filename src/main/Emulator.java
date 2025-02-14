@@ -29,7 +29,7 @@ public class Emulator {
 		System.out.println("IE: " + Integer.toHexString(memory.read(0xFFFF)));
 		System.out.println("IF: " + Integer.toHexString(memory.read(0xFF0F)));
 
-		for(int i = 0; i < 30; i++) {
+		for(int i = 0; i < 50; i++) {
 			cpu.step();
 		}
 		

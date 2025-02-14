@@ -5,6 +5,7 @@ public class CPU {
 	private int A, B, C, D, E, H, L, F; //8 bit registers 
 	private int SP, PC; //16 bit registers (AF,BC,DE,HL paired);
 	private boolean IME = false;
+	private int RST38count = 0;
 	
 	private Memory memory;
 	
@@ -1172,8 +1173,10 @@ public class CPU {
 	        
 	        // Return instructions
 	        case (byte) 0xC9: { // RET
-	            PC = (memory.read(SP++) & 0xFF) | ((memory.read(SP++) & 0xFF) << 8);
+	            int newPC = (memory.read(SP) & 0xFF) | ((memory.read(SP + 1) & 0xFF) << 8);
+	            SP += 2;
 	            System.out.println("RET executed: PC = " + Integer.toHexString(PC));
+	            PC = newPC;
 	            break;
 	        }
 
@@ -1279,16 +1282,14 @@ public class CPU {
 	            break;
 
 	        case (byte) 0xFF: // RST 38H
-	        	int RST38count = 0;
 	            SP -= 2;
             	memory.write(SP + 1, (PC >> 8) & 0xFF);
 	            memory.write(SP, PC & 0xFF);
 	            PC = 0x38;
 	            
 	            RST38count++;
-	            if(RST38count > 10) {
-	            	System.out.println("RST $38 crash! Halting program.");
-	            	System.exit(1);
+	            if(RST38count > 5) {
+	            	throw new RuntimeException("RST $38 crash! Halting program.");
 	            }
 	            
 	            System.out.println("RST 38H executed, jumping to 0x38.");
