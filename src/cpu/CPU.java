@@ -4,7 +4,7 @@ import memory.Memory;
 public class CPU {
 	private int A, B, C, D, E, H, L, F; //8 bit registers 
 	private int SP, PC; //16 bit registers (AF,BC,DE,HL paired);
-	private boolean ime = false;
+	private boolean IME = false;
 	
 	private Memory memory;
 	
@@ -16,8 +16,66 @@ public class CPU {
 		this.memory = memory;
 	}
 	
+	//Interrupts
+	private void checkInterrupts() {
+		System.out.println("IME Status: " + IME);
+		int interruptFlags = memory.read(0xFF0F); //read IF register
+		int enabledInterrupts = memory.read(0xFFFF); //read IE register
+		int pending = interruptFlags & enabledInterrupts; //active and enabled interrupts
+		
+		if(IME & pending != 0) {
+			for(int i = 0; i < 5; i++) {
+				if ((pending & (1 << i)) != 0) {
+					handleInterrupt(i);
+					return;
+				}
+			}
+		}
+		
+	}
+	
+	private void handleInterrupt(int interruptType) {
+		System.out.println("Handling Interrupt: " + interruptType);
+		IME = false; //disable interrupts
+		memory.write(0xFF0F, memory.read(0xFF0F) & ~(1 << interruptType)); //clear the IF flag
+		
+		//push PC onto stack
+		SP -= 2;
+		memory.write(SP,  (PC >> 8) & 0xFF);
+		memory.write(SP + 1, PC & 0xFF);
+		
+		switch (interruptType) {
+		case 0: // VBlank
+			System.out.println("Jumping to Interrupt Vector: " + "0x" + Integer.toHexString(PC));
+			PC = 0x40;
+			break;
+		case 1: // LCD
+			PC = 0x48;
+			break;
+		case 2: // Timer
+			PC = 0x50;
+			break;
+		case 3: // Serial
+			PC = 0x58;
+			break;
+		case 4: // Joy-Pad
+			PC = 0x60;
+			break;
+		}
+		System.out.println("Interrupt Handled: " + interruptType + " Jumping to " + Integer.toHexString(PC).toUpperCase());
+	}
+	
+	//VBlank Interrupt
+	public void triggerVBlank() {
+		memory.write(0xFFFF, memory.read(0xFFFF) | 0x01);
+		memory.write(0xFF0F, memory.read(0xFF0F) | 0x01);
+		
+		IME = true;
+		System.out.println("VBlank Interrupt Triggered");
+	}
+	
 	/**
-	 * init cpu state
+	 * Reset CPU state
 	 */
 	public void reset() {
 		A = 0x01;
@@ -82,6 +140,7 @@ public class CPU {
         F = value & 0xFF;  // Ensure the value is 8 bits
     }
 
+    //getter methods for the registers
     public int getA() {
         return A;
     }
@@ -212,7 +271,10 @@ public class CPU {
 	            memory.write(addr, (byte) A);
 	            System.out.println("LD (a16), A executed: (a16) = " + Integer.toHexString(addr) + ", A = " + Integer.toHexString(A));
 	            break;
-
+ 	        case (byte) 0xFB: // EI (Enable interrupts)
+ 	        	IME = true;
+ 	        	System.out.println("EI executed: IME set to true");
+ 	        	break;
 	        // Arithmetic instructions
 	        case (byte) 0x80: { // ADD A, B
 	            result = A + B;
@@ -1090,7 +1152,7 @@ public class CPU {
 
 	        case (byte) 0xD9: { // RETI
 	            PC = (memory.read(SP++) & 0xFF) | ((memory.read(SP++) & 0xFF) << 8);
-	            ime = true; // Enable interrupts
+	            IME = true; // Enable interrupts
 	            System.out.println("RETI executed: PC = " + Integer.toHexString(PC));
 	            break;
 	        }
@@ -1170,8 +1232,9 @@ public class CPU {
 	 * emulate a cpu cycle
 	 */
 	public void step() {
-		byte opcode = fetch();
-		execute(opcode);
+		byte opcode = fetch(); //fetch and decode,
+		execute(opcode); //and execute!
+		checkInterrupts();
 	}
 	
 	//flag implementation
