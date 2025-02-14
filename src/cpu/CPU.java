@@ -18,7 +18,6 @@ public class CPU {
 	
 	//Interrupts
 	private void checkInterrupts() {
-		System.out.println("IME Status: " + IME);
 		int interruptFlags = memory.read(0xFF0F); //read IF register
 		int enabledInterrupts = memory.read(0xFFFF); //read IE register
 		int pending = interruptFlags & enabledInterrupts; //active and enabled interrupts
@@ -41,13 +40,13 @@ public class CPU {
 		
 		//push PC onto stack
 		SP -= 2;
-		memory.write(SP,  (PC >> 8) & 0xFF);
-		memory.write(SP + 1, PC & 0xFF);
+		memory.write(SP + 1,  (PC >> 8) & 0xFF); //high byte
+		memory.write(SP, PC & 0xFF); //low byte
 		
 		switch (interruptType) {
 		case 0: // VBlank
-			System.out.println("Jumping to Interrupt Vector: " + "0x" + Integer.toHexString(PC));
 			PC = 0x40;
+			System.out.println("Jumping to Interrupt Vector: " + "0x" + Integer.toHexString(PC));
 			break;
 		case 1: // LCD
 			PC = 0x48;
@@ -195,7 +194,7 @@ public class CPU {
 	    switch(opcode) {
 	        // Placeholder instruction
 	        case (byte) 0x00: // NOP - No operation (commonly used as a placeholder)
-	            System.out.println("NOP executed.");
+	            System.out.println("NOP executed at address: " + "$" + Integer.toHexString(PC - 1));
 	            break;
 
 	        // CPU stop instructions
@@ -1151,8 +1150,9 @@ public class CPU {
 	            break;
 
 	        case (byte) 0xD9: { // RETI
+	        	IME = true; // Enable interrupts
 	            PC = (memory.read(SP++) & 0xFF) | ((memory.read(SP++) & 0xFF) << 8);
-	            IME = true; // Enable interrupts
+	            SP += 2;
 	            System.out.println("RETI executed: PC = " + Integer.toHexString(PC));
 	            break;
 	        }

@@ -6,12 +6,14 @@ import memory.Memory;
 public class Emulator {
 	public static void main(String[] args) {
 		Memory memory = new Memory(); //set virtual ram
-		memory.loadROM(""); //set to test.gb to test real rom s
+		memory.loadROM("pokeRed.gb"); //set to test.gb to test real rom s
 		
 		CPU cpu = new CPU();
 		cpu.setMemory(memory);
 
-		//fill memory with ranInstruct
+		memory.write(0x40, 0x3E);
+		memory.write(0x41, 0x55);
+		memory.write(0x42, 0xC9);
 
 		System.out.println("init emulator;");
 		System.out.println("cpu starting: " + Integer.toHexString(cpu.getAF()));
@@ -27,7 +29,7 @@ public class Emulator {
 		System.out.println("IE: " + Integer.toHexString(memory.read(0xFFFF)));
 		System.out.println("IF: " + Integer.toHexString(memory.read(0xFF0F)));
 
-		for(int i = 0; i < 10; i++) {
+		for(int i = 0; i < 1000; i++) {
 			cpu.step();
 		}
 		
