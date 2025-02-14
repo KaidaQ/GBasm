@@ -105,6 +105,20 @@ public class Memory {
 				romBank = value & 0x7F;
 				if (romBank == 0) romBank = 1;
 				System.out.println("MBC3 ROM Bank switched to: " + romBank);
+			} else if (address >= 0x4000 && address >= 0x5FFF) {
+				//Ram bank sel or RTC reg sel
+				ramBank = value & 0x0F;
+				if (ramBank >= 0x08) {
+					System.out.println("MBC3 selected RTC register: " + ramBank);
+				} else {
+					System.out.println("MBC3 RAM Bank switched to: " + ramBank);
+				}
+			} else if (address >= 0x6000 && address <= 0x7FFF) {
+				//latch clock data - implement later
+				System.out.println("MBC3 RTC Latch: " + value);
+			} else if (address >= 0xA000 && address <= 0xBFFF && ramEnabled) {
+				int ramAddr = (ramBank * 0x2000) + (address - 0xA000);
+				memory[ramAddr] = (byte) value;
 			}
 		}
 		

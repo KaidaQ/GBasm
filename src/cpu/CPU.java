@@ -270,10 +270,31 @@ public class CPU {
 	            memory.write(addr, (byte) A);
 	            System.out.println("LD (a16), A executed: (a16) = " + Integer.toHexString(addr) + ", A = " + Integer.toHexString(A));
 	            break;
+	            
+ 	        case (byte) 0xF0:  // LD A, (FF00 + d8)
+ 	        	addr = 0xFF00 + memory.read(PC++);
+ 	        	A = memory.read(addr);
+ 	        	System.out.println("LD A, (FF00 + d8) executed: A = " + Integer.toHexString(A));
+ 	        	break;
+ 	        
+ 	        case (byte) 0xFA: // LD A, (a16)
+ 	        	int addr16 = memory.read(PC++) | (memory.read(PC++) << 8);
+ 	        	A = memory.read(addr16);
+ 	        	System.out.println("LD A, (a16) executed: A = " + Integer.toHexString(A));
+ 	        	break;
+ 	        
+ 	        case (byte) 0xE0: // LD (FF00 + d8), A
+ 	        	int ioAddr = 0xFF00 + memory.read(PC++);
+ 	        	memory.write(ioAddr, A);
+ 	        	System.out.println("LD (FF00 + d8), A executed.");
+ 	        	break;
+	            
+	        //Interrupts
  	        case (byte) 0xFB: // EI (Enable interrupts)
  	        	IME = true;
  	        	System.out.println("EI executed: IME set to true");
  	        	break;
+ 	        	
 	        // Arithmetic instructions
 	        case (byte) 0x80: { // ADD A, B
 	            result = A + B;
@@ -525,7 +546,23 @@ public class CPU {
 	            System.out.println("AND A, d8 executed.");
 	            break;
 	        }
-
+	        
+	        case (byte) 0xA7: // AND A, A
+	        	setFlag(7, A == 0);
+	        	setFlag(6, false);
+            	setFlag(5, true);
+            	setFlag(4, false);
+            	System.out.println("AND A, A executed.");
+            	break;
+	        
+	        case (byte) 0xAF: // XOR A
+	        	A ^= A;
+            	setFlag(7, A == 0);
+            	setFlag(6, false);
+            	setFlag(5, false);
+            	setFlag(4, false);
+            	System.out.println("XOR A executed.");
+	            break;
 	        case (byte) 0xA8: // XOR A, B
 	            A = A ^ B;
 	            setFlag(7, A == 0);
@@ -1105,7 +1142,34 @@ public class CPU {
 	            }
 	            break;
 	        }
-
+	        
+	        //push instructions
+	        case (byte) 0xF5: //push AF
+	        	SP -= 2;
+	        	memory.write(SP + 1, A);
+	        	memory.write(SP, F);
+	        	System.out.println("PUSH AF executed.");
+	        	break;
+	        case (byte) 0xC5: //push BC
+	        	SP -= 2;
+	        	memory.write(SP + 1, B);
+	        	memory.write(SP, C);
+	        	System.out.println("PUSH AF executed.");
+	        	break;
+	        case (byte) 0xD5: //push DE
+	        	SP -= 2;
+	        	memory.write(SP + 1, D);
+	        	memory.write(SP, E);
+	        	System.out.println("PUSH AF executed.");
+	        	break;
+	        case (byte) 0xE5: //push HL
+	        	SP -= 2;
+	        	memory.write(SP + 1, H);
+	        	memory.write(SP, L);
+	        	System.out.println("PUSH AF executed.");
+	        	break;
+	        
+	        
 	        // Return instructions
 	        case (byte) 0xC9: { // RET
 	            PC = (memory.read(SP++) & 0xFF) | ((memory.read(SP++) & 0xFF) << 8);
@@ -1215,11 +1279,19 @@ public class CPU {
 	            break;
 
 	        case (byte) 0xFF: // RST 38H
+	        	int RST38count = 0;
 	            SP -= 2;
+            	memory.write(SP + 1, (PC >> 8) & 0xFF);
 	            memory.write(SP, PC & 0xFF);
-	            memory.write(SP + 1, (PC >> 8) & 0xFF);
 	            PC = 0x38;
-	            System.out.println("RST 38H executed.");
+	            
+	            RST38count++;
+	            if(RST38count > 10) {
+	            	System.out.println("RST $38 crash! Halting program.");
+	            	System.exit(1);
+	            }
+	            
+	            System.out.println("RST 38H executed, jumping to 0x38.");
 	            break;
 	            
 	        	//default case (unknown opcode)
@@ -1232,6 +1304,10 @@ public class CPU {
 	 * emulate a cpu cycle
 	 */
 	public void step() {
+		//corruption check
+		if (PC == 0x0000) {
+			System.out.println("WARNING! PC jumped to 0x0000! Possible corruption has occurred!");
+		}
 		byte opcode = fetch(); //fetch and decode,
 		execute(opcode); //and execute!
 		checkInterrupts();
