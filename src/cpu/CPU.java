@@ -282,7 +282,18 @@ public class CPU {
 	        	H = memory.read(PC++);
 	        	System.out.print("LD HL, d16 executed: HL = " + Integer.toHexString(getHL()));
 	        	break;
-	        	
+	        case (byte) 0x22: { // LD (HL+), A
+	            addr = getHL();  // Get HL register pair as an address
+	            memory.write(addr, A);  // Store A at (HL)
+	            
+	            setHL((addr + 1) & 0xFFFF); // Increment HL
+
+	            System.out.println("LD (HL+), A executed: A = " + Integer.toHexString(A) + 
+	                               " stored at address " + Integer.toHexString(addr) + 
+	                               " | New HL = " + Integer.toHexString(getHL()));
+	            break;
+	        }
+	
 	        case (byte) 0x66:
 	        	H = memory.read(getHL()); //LD H, (HL)
 	        	System.out.println("LD H, (HL) executed : " + Integer.toHexString(H));
@@ -291,6 +302,19 @@ public class CPU {
 	            memory.write(getHL(), A);
 	            System.out.println("LD (HL), A executed.");
 	            break;
+	            
+	        case (byte) 0x36: { // LD (HL), d8
+	            addr = getHL(); // Get HL register pair as an address
+	            value = memory.read(PC++) & 0xFF; // Read the immediate byte
+
+	            memory.write(addr, value);
+
+	            System.out.println("LD (HL), d8 executed: (HL) = " + Integer.toHexString(value) +
+	                               " at address " + Integer.toHexString(addr));
+	            break;
+	        }
+    
+	            
 	            //0xED is a invalid operation in the gameboy z80, but a full z80 would use it. this is just here so its outputting "illegal action : 0xED"
 	        case (byte) 0xED:
 	        	System.out.println("0xED appears in every Game Boy rom, at byte $105.");
@@ -889,7 +913,16 @@ public class CPU {
 	            setFlag(5, (B & 0xF) == 0xF);
 	            System.out.println("DEC B executed: B = " + Integer.toHexString(B & 0xFF));
 	            break;
+	            
+	        case (byte) 0x0B: { // DEC BC
+	            int bc = getBC();
+	            bc = (bc - 1) & 0xFFFF; // 16bit
+	            setBC(bc);
 
+	            System.out.println("DEC BC executed: BC = " + Integer.toHexString(getBC()));
+	            break;
+	        }
+	        
 	        case (byte) 0x0C: // INC C
 	            C++;
 	            setFlag(7, C == 0);
@@ -945,7 +978,16 @@ public class CPU {
 	            setFlag(5, (H & 0xF) == 0);
 	            System.out.println("INC H executed: H = " + Integer.toHexString(H & 0xFF));
 	            break;
+	            
+	        case (byte) 0x23: { // INC HL
+	            int hl = getHL();
+	            hl = (hl + 1) & 0xFFFF; //16bit
+	            setHL(hl);
 
+	            System.out.println("INC HL executed: HL = " + Integer.toHexString(getHL()));
+	            break;
+	        }
+    
 	        case (byte) 0x25: // DEC H
 	            H--;
 	            setFlag(7, H == 0);
