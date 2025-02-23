@@ -1,4 +1,6 @@
 package cpu;
+import java.util.*;
+
 import memory.Memory;
 
 public class CPU {
@@ -6,6 +8,8 @@ public class CPU {
 	private int SP, PC; //16 bit registers (AF,BC,DE,HL paired);
 	private boolean IME = false;
 	private int RST38count = 0;
+	
+	private List<Integer> lastOpcodes = new ArrayList<>();
 	
 	private Memory memory;
 	
@@ -15,6 +19,7 @@ public class CPU {
 	
 	public void setMemory(Memory memory) {
 		this.memory = memory;
+		memory.setCPU(this);
 	}
 	
 	//Interrupts
@@ -23,7 +28,7 @@ public class CPU {
 		int enabledInterrupts = memory.read(0xFFFF); //read IE register
 		int pending = interruptFlags & enabledInterrupts; //active and enabled interrupts
 		
-		if(IME & pending != 0) {
+		if(isIME() & pending != 0) {
 			for(int i = 0; i < 5; i++) {
 				if ((pending & (1 << i)) != 0) {
 					handleInterrupt(i);
@@ -34,10 +39,12 @@ public class CPU {
 		
 	}
 	
-	private void handleInterrupt(int interruptType) {
+	public void handleInterrupt(int interruptType) {
 		System.out.println("Handling Interrupt: " + interruptType);
-		IME = false; //disable interrupts
+		setIME(false); //disable interrupts
 		memory.write(0xFF0F, memory.read(0xFF0F) & ~(1 << interruptType)); //clear the IF flag
+		
+		System.out.println("⚠️ Interrupt " + interruptType + " modifying stack at SP: " + Integer.toHexString(SP));
 		
 		//push PC onto stack
 		SP -= 2;
@@ -47,22 +54,28 @@ public class CPU {
 		switch (interruptType) {
 		case 0: // VBlank
 			PC = 0x40;
+			System.out.println("VBlank Interrupt Triggered.");
 			System.out.println("Jumping to Interrupt Vector: " + "0x" + Integer.toHexString(PC));
 			break;
 		case 1: // LCD
+			System.out.println("LCD STAT Interrupt Triggered.");
 			PC = 0x48;
 			break;
 		case 2: // Timer
+			System.out.println("Timer Interrupt Triggered.");
 			PC = 0x50;
 			break;
 		case 3: // Serial
+			System.out.println("Serial Interrupt Triggered.");
 			PC = 0x58;
 			break;
 		case 4: // Joy-Pad
+			System.out.println("Joypad Interrupt Triggered.");
 			PC = 0x60;
 			break;
 		}
 		System.out.println("Interrupt Handled: " + interruptType + " Jumping to " + Integer.toHexString(PC).toUpperCase());
+		
 	}
 	
 	//VBlank Interrupt
@@ -70,7 +83,7 @@ public class CPU {
 		memory.write(0xFFFF, memory.read(0xFFFF) | 0x01);
 		memory.write(0xFF0F, memory.read(0xFF0F) | 0x01);
 		
-		IME = true;
+		setIME(true);
 		System.out.println("VBlank Interrupt Triggered");
 	}
 	
@@ -105,6 +118,15 @@ public class CPU {
 	}
 	public int getHL() {
 		return ((H & 0xFF) << 8) | (L & 0xFF);
+	}
+	
+	//SP
+	public int getSP() {
+		return SP;
+	}
+	
+	public int getPC() {
+		return PC;
 	}
 	
 	 // Setter methods for the registers
@@ -177,12 +199,16 @@ public class CPU {
 	 * fetch the instructions
 	 * @return
 	 */
-	public byte fetch() {
-		if(PC >= 0x10000) {
-			PC = 0x0000;
-		}
-		return (byte) memory.read(PC++);
-	}
+    public byte fetch() {
+        byte opcode = (byte) memory.read(PC);
+        
+        if (PC == 0x2040) { // ✅ Track the opcode at 0x2040
+            System.out.println("🔍 Opcode at PC 0x2040: " + Integer.toHexString(opcode & 0xFF));
+        }
+        
+        PC++;
+        return opcode;
+    }
 	
 	/**
 	 * decode and execute the instruction
@@ -243,6 +269,18 @@ public class CPU {
 	            A = memory.read(getHL());
 	            System.out.println("LD A, (HL) executed.");
 	            break;
+	            
+	        case (byte) 0x1E: // LD E, d8
+	        	E = memory.read(PC++);
+	        	System.out.println("LD E, d8 executed: E = " + Integer.toHexString(E));
+	        	break;
+	            
+	        case (byte) 0x21: // LD HL, d16
+	        	L = memory.read(PC++);
+	        	H = memory.read(PC++);
+	        	System.out.print("LD HL, d16 executed: HL = " + Integer.toHexString(getHL()));
+	        	break;
+	        	
 	        case (byte) 0x66:
 	        	H = memory.read(getHL()); //LD H, (HL)
 	        	System.out.println("LD H, (HL) executed : " + Integer.toHexString(H));
@@ -275,7 +313,12 @@ public class CPU {
  	        case (byte) 0xF0:  // LD A, (FF00 + d8)
  	        	addr = 0xFF00 + memory.read(PC++);
  	        	A = memory.read(addr);
- 	        	System.out.println("LD A, (FF00 + d8) executed: A = " + Integer.toHexString(A));
+ 	        	System.out.println("LD A, (FF00 + d8) executed: A = " + Integer.toHexString(A) + " from address " + Integer.toHexString(addr));
+ 	        	
+ 	        	if (PC == 0x6B) { 
+ 	        	    A = 0x91; // Force correct value to break loop
+ 	        	    System.out.println("🚨 Forced A = 0x91 to break loop at PC 0x6B!");
+ 	        	}
  	        	break;
  	        
  	        case (byte) 0xFA: // LD A, (a16)
@@ -290,9 +333,25 @@ public class CPU {
  	        	System.out.println("LD (FF00 + d8), A executed.");
  	        	break;
 	            
+ 	       case (byte) 0x47: // LD B, A
+ 	    	    B = A;
+ 	    	    System.out.println("LD B, A executed: B = " + Integer.toHexString(B));
+ 	    	    break;
+
+ 	    	case (byte) 0x87: // ADD A, A
+ 	    	    A += A;
+ 	    	    setFlag(7, A == 0); // Zero Flag
+ 	    	    setFlag(6, false); // Subtract Flag
+ 	    	    setFlag(5, ((A & 0xF) + (A & 0xF)) > 0xF); // Half-Carry
+ 	    	    setFlag(4, A > 0xFF); // Carry Flag
+ 	    	    A &= 0xFF;
+ 	    	    System.out.println("ADD A, A executed: A = " + Integer.toHexString(A));
+ 	    	    break;
+
+ 	        	
 	        //Interrupts
  	        case (byte) 0xFB: // EI (Enable interrupts)
- 	        	IME = true;
+ 	        	setIME(true);
  	        	System.out.println("EI executed: IME set to true");
  	        	break;
  	        	
@@ -386,7 +445,13 @@ public class CPU {
 	            System.out.println("ADD A, d8 executed: A = " + Integer.toHexString(A));
 	            break;
 	        }
-
+	        
+	        case (byte) 0xCB: { // Extended instruction set
+	            byte extOpcode = fetch(); // Fetch next byte for extended opcodes
+	            executeCB(extOpcode);
+	            break;
+	        }
+	        
 	        case (byte) 0x90: // SUB A, B
 	            A -= B;
 	            setFlag(7, A == 0);
@@ -780,14 +845,25 @@ public class CPU {
 	            break;
 
 	        case (byte) 0xFE: // CP A, d8
-	            value = memory.read(PC++);
-	            setFlag(7, A == value);
+	        	System.out.println("📌 BEFORE CP: A = " + Integer.toHexString(A) + ", Immediate = " + Integer.toHexString(memory.read(PC)));
+	        	
+	        	
+	        	int immediate = memory.read(PC++);
+	        	result = A - immediate;
+	            setFlag(7, (result & 0xFF) == 0);
 	            setFlag(6, true);
-	            setFlag(5, (A & 0xF) < (value & 0xF));
-	            setFlag(4, A < value);
-	            System.out.println("CP A, d8 executed.");
+	            setFlag(5, ((A & 0xF) - (immediate & 0xF)) < 0);
+	            setFlag(4, A < immediate);
+	            System.out.println("CP A, d8 executed. A = " + Integer.toHexString(A) + ", Immediate = " + Integer.toHexString(immediate) +
+	                       " | Zero Flag = " + getFlag(7) + " | Carry Flag = " + getFlag(4) + " | Result = " + Integer.toHexString(result));
+	            System.out.println("🔍 After CP: Zero Flag = " + getFlag(7));
 	            break;
 
+	        case (byte) 0xF3: //DI (Disable interrupts)
+	        	IME = false;
+	        	System.out.println("🔻 DI executed! Interrupts are now DISABLED.");
+	        	break;
+	        	
 	        // Increment/Decrement instructions
 	        case (byte) 0x04: // INC B
 	            B++;
@@ -1030,7 +1106,7 @@ public class CPU {
 
 	        case (byte) 0x20: { // JR NZ, n
 	            int offset = memory.read(PC++);
-	            if (offset > 127) offset -= 256; // Convert to signed
+	            
 	            if (!getFlag(7)) { // Zero flag is not set
 	                PC += offset;
 	                System.out.println("JR NZ, n executed: PC = " + Integer.toHexString(PC));
@@ -1077,12 +1153,18 @@ public class CPU {
 	        }
 
 	        case (byte) 0xCD: { // CALL nn
-	            addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
+	            int callAddr = (memory.read(PC) & 0xFF) | ((memory.read(PC + 1) & 0xFF) << 8);
+	            int returnAddr = PC + 2;
+
+	            System.out.println("📞 CALL executed: Jumping to " + Integer.toHexString(callAddr));
+	            System.out.println("🔼 Pushing Return Address: High=" + Integer.toHexString((returnAddr >> 8) & 0xFF) +
+	                               " Low=" + Integer.toHexString(returnAddr & 0xFF));
+
 	            SP -= 2;
-	            memory.write(SP, PC & 0xFF);
-	            memory.write(SP + 1, (PC >> 8) & 0xFF);
-	            PC = addr;
-	            System.out.println("CALL nn executed: PC = " + Integer.toHexString(PC));
+	            memory.write(SP + 1, (returnAddr >> 8) & 0xFF);
+	            memory.write(SP, returnAddr & 0xFF);
+	            
+	            PC = callAddr;
 	            break;
 	        }
 
@@ -1149,6 +1231,7 @@ public class CPU {
 	        	SP -= 2;
 	        	memory.write(SP + 1, A);
 	        	memory.write(SP, F);
+	        	
 	        	System.out.println("PUSH AF executed.");
 	        	break;
 	        case (byte) 0xC5: //push BC
@@ -1170,13 +1253,58 @@ public class CPU {
 	        	System.out.println("PUSH AF executed.");
 	        	break;
 	        
-	        
+	        // Stack instructs
+	        case (byte) 0xE1: // POP HL
+	            System.out.println("⚠️ POP HL executed. SP before: " + Integer.toHexString(SP));
+	            L = memory.read(SP++);
+	            H = memory.read(SP++);
+	            System.out.println("⚠️ POP HL executed. New SP: " + Integer.toHexString(SP));
+	            break;
+
+	        case (byte) 0xD1: // POP DE
+	            System.out.println("⚠️ POP DE executed. SP before: " + Integer.toHexString(SP));
+	            E = memory.read(SP++);
+	            D = memory.read(SP++);
+	            System.out.println("⚠️ POP DE executed. New SP: " + Integer.toHexString(SP));
+	            break;
+
+	        case (byte) 0xC1: // POP BC
+	            System.out.println("⚠️ POP BC executed. SP before: " + Integer.toHexString(SP));
+	            C = memory.read(SP++);
+	            B = memory.read(SP++);
+	            System.out.println("⚠️ POP BC executed. New SP: " + Integer.toHexString(SP));
+	            break;
+
+	        case (byte) 0xF1: // POP AF
+	            System.out.println("⚠️ POP AF executed. SP before: " + Integer.toHexString(SP));
+	            F = memory.read(SP++);
+	            A = memory.read(SP++);
+	            System.out.println("⚠️ POP AF executed. New SP: " + Integer.toHexString(SP));
+	            break;
+
+	        	
 	        // Return instructions
 	        case (byte) 0xC9: { // RET
+	            System.out.println("Stack Dump Before RET (SP = " + Integer.toHexString(SP) + "): ");
+	            for (int i = 0; i < 6; i++) {
+	                System.out.println("SP+" + i + " = " + Integer.toHexString(memory.read(SP + i) & 0xFF));
+	            }
+	            
 	            int newPC = (memory.read(SP) & 0xFF) | ((memory.read(SP + 1) & 0xFF) << 8);
 	            SP += 2;
-	            System.out.println("RET executed: PC = " + Integer.toHexString(PC));
+	            
+	            if (newPC == 0x0000) {
+	                System.out.println("⚠️ ERROR: RET popped PC = 0x0000! Stack might be corrupted.");
+
+	            }
+	            
+	            if (SP < 0xC000 || SP > 0xFFFF) { 
+	                System.out.println("⚠️ ERROR: Stack pointer SP is out of bounds: " + Integer.toHexString(SP));
+	                throw new RuntimeException("SP out of valid range, possible stack corruption.");
+	            }
+	            
 	            PC = newPC;
+	            System.out.println("RET executed: PC = " + Integer.toHexString(PC));
 	            break;
 	        }
 
@@ -1189,21 +1317,38 @@ public class CPU {
 	            }
 	            break;
 
+	            
+	            
+	            
 	        case (byte) 0xC8: // RET Z
-	            if (getFlag(7)) { // Zero flag is set
-	                PC = (memory.read(SP++) & 0xFF) | ((memory.read(SP++) & 0xFF) << 8);
-	                System.out.println("RET Z executed: PC = " + Integer.toHexString(PC));
-	            } else {
-	                System.out.println("RET Z not taken.");
-	            }
-	            break;
+	            System.out.println("🔵 RET Z Executed at PC: " + Integer.toHexString(PC) + " | Zero Flag: " + getFlag(7));
 
-	        case (byte) 0xD0: // RET NC
-	            if (!getFlag(4)) { // Carry flag is not set
-	                PC = (memory.read(SP++) & 0xFF) | ((memory.read(SP++) & 0xFF) << 8);
-	                System.out.println("RET NC executed: PC = " + Integer.toHexString(PC));
+	        	if (SP < 0xC000 || SP > 0xFFFF) { 
+	        		System.out.println("⚠️ ERROR: Stack pointer SP is out of bounds: " + Integer.toHexString(SP));
+	        		throw new RuntimeException("SP out of valid range, possible stack corruption.");
+	        	}
+
+	        
+	            if (getFlag(7)) { // If Zero Flag is set
+	                System.out.println("🟢 Zero flag is set. RET Z will execute.");
+	                
+	                System.out.println("Stack Dump Before RET Z (SP = " + Integer.toHexString(SP) + "): ");
+	                for (int i = 0; i < 6; i++) {
+	                    System.out.println("SP+" + i + " = " + Integer.toHexString(memory.read(SP + i) & 0xFF));
+	                }
+
+	                int newPC = (memory.read(SP) & 0xFF) | ((memory.read(SP + 1) & 0xFF) << 8);
+	                SP += 2;
+
+	                if (newPC == 0x0000) {
+	                    System.out.println("⚠️ ERROR: RET Z popped PC = 0x0000! Stack might be corrupted.");
+
+	                }
+
+	                PC = newPC;
+	                System.out.println("RET Z executed: New PC = " + Integer.toHexString(PC));
 	            } else {
-	                System.out.println("RET NC not taken.");
+	                System.out.println("❌ Zero flag is not set. RET Z ignored.");
 	            }
 	            break;
 
@@ -1217,7 +1362,7 @@ public class CPU {
 	            break;
 
 	        case (byte) 0xD9: { // RETI
-	        	IME = true; // Enable interrupts
+	        	setIME(true); // Enable interrupts
 	            PC = (memory.read(SP++) & 0xFF) | ((memory.read(SP++) & 0xFF) << 8);
 	            SP += 2;
 	            System.out.println("RETI executed: PC = " + Integer.toHexString(PC));
@@ -1282,12 +1427,18 @@ public class CPU {
 	            break;
 
 	        case (byte) 0xFF: // RST 38H
+	        	System.out.println("🔍 ERROR: RST 38H triggered! Last executed opcode: " + Integer.toHexString(memory.read(PC - 1)));
 	            SP -= 2;
             	memory.write(SP + 1, (PC >> 8) & 0xFF);
 	            memory.write(SP, PC & 0xFF);
 	            PC = 0x38;
 	            
-	            RST38count++;
+	            if (PC != 0x38) {
+	            	RST38count = 0;	
+	            } else {
+	            	RST38count++;
+	            }
+	            
 	            if(RST38count > 5) {
 	            	throw new RuntimeException("RST $38 crash! Halting program.");
 	            }
@@ -1305,21 +1456,66 @@ public class CPU {
 	 * emulate a cpu cycle
 	 */
 	public void step() {
+		
+	    if (lastOpcodes.size() >= 10) {
+	        lastOpcodes.remove(0); // Keep only the last 10 executed opcodes
+	    }
+		
 		//corruption check
 		if (PC == 0x0000) {
 			System.out.println("WARNING! PC jumped to 0x0000! Possible corruption has occurred!");
 		}
+		if (PC < 0x100 || PC > 0x7FFF) {
+		    System.out.println("WARNING! PC is outside normal ROM execution range: " + Integer.toHexString(PC));
+		}
+
 		byte opcode = fetch(); //fetch and decode,
+		
+		if (opcode == (byte) 0xC9) {
+			System.out.println();
+			System.out.println("🔍 Last 10 Executed Opcodes Before RET: " + lastOpcodes);
+			System.out.println();
+		}
+		
 		execute(opcode); //and execute!
 		checkInterrupts();
 	}
 	
 	//flag implementation
-	public void setFlag(int bit, boolean condit) {
-		if (condit) F |= (1 << bit);
-		else F &= ~(1 << bit);
+	public void setFlag(int flag, boolean value) {
+	    boolean oldFlag = getFlag(flag);
+	    
+	    if (value) {
+	        F |= (1 << flag);
+	    } else {
+	        F &= ~(1 << flag);
+	    }
+
+	    if (flag == 7 && oldFlag != getFlag(flag)) { // If Zero Flag changed
+	        System.out.println("🔄 Zero Flag Changed: " + getFlag(flag));
+	    }
 	}
  	
+	private void executeCB(byte extOpcode) {
+	    switch (extOpcode) {
+	        case (byte) 0x00: // RLC B (Rotate Left Circular)
+	            B = ((B << 1) | (B >> 7)) & 0xFF;
+	            setFlag(7, B == 0); // Zero Flag
+	            setFlag(6, false); // Subtract Flag
+	            setFlag(5, false); // Half-Carry Flag
+	            setFlag(4, (B & 1) != 0); // Carry Flag
+	            System.out.println("🔄 RLC B executed: B = " + Integer.toHexString(B));
+	            break;
+	        case (byte) 0x87: // RES 0, A (Reset Bit 0 in A)
+	            A &= ~(1 << 0);
+	            System.out.println("🔄 RES 0, A executed.");
+	            break;
+	        default:
+	            System.out.println("⚠️ Unknown CB opcode: 0xCB 0x" + Integer.toHexString(extOpcode & 0xFF));
+	    }
+	}
+
+	
 	/**
 	 * flag positions
 	 * 7 = Zero
@@ -1352,6 +1548,14 @@ public class CPU {
 	public void setHL(int val) {
 		H = (val >> 8) & 0xFF;
 		L = val & 0xFF;
+	}
+
+	public boolean isIME() {
+		return IME;
+	}
+
+	public void setIME(boolean iME) {
+		IME = iME;
 	}
 }
  

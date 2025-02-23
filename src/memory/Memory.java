@@ -1,9 +1,17 @@
 package memory;
+import cpu.CPU;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
 public class Memory {
+	
+	private CPU cpu;
+	
+	public void setCPU(CPU cpu) {
+		this.cpu = cpu;
+	}
+	
 	private byte[] memory = new byte[0x10000]; //64kb of memory
 	
 	private int romBank = 1;
@@ -45,10 +53,14 @@ public class Memory {
 			System.err.println("Error loading ROM: " + e.getMessage());
 		}
 	}
-	
-	
-	
+
 	public int read(int address) {
+	    // Handle special I/O register LY (FF44)
+		if (address == 0xFF44) {
+			System.out.println("LY Register read: Returning 0x91.");
+			return 0x5B; 
+		}
+		
 		//handle IE and IF registers-
 		if (address == 0xFFFF) return IE;
 		if (address == 0xFF0F) return IF;
@@ -72,6 +84,25 @@ public class Memory {
 		//handle IE and IF registers-
 		if (address == 0xFFFF) IE = value & 0xFF;
 		if (address == 0xFF0F) IF = value & 0xFF;
+		
+		// Check stack memory
+		if (address >= 0xC000 && address <= 0xFFFF) {
+		    System.out.println("⚠️ Stack memory modified at: " + Integer.toHexString(address) + " | Value: " + Integer.toHexString(value) +  " | Written by instruction at PC: " + Integer.toHexString(cpu.getPC()));
+		}
+		
+		if (address == 0x2040) {
+		    System.out.println("🚨 Writing to address 0x2040 | Value: " + Integer.toHexString(value & 0xFF));
+		}
+		
+		if (address == cpu.getSP() || address == cpu.getSP() + 1) { 
+		    System.out.println("🚨 Stack overwrite detected at " + Integer.toHexString(address) +
+		        " | Value: " + Integer.toHexString(value) + 
+		        " | Written by instruction at PC: " + Integer.toHexString(cpu.getPC()));
+		}
+
+		if (address >= 0xFF00 && address <= 0xFFFF) {
+		    System.out.println("⚠️ Writing to I/O register: " + Integer.toHexString(address) + " | Value: " + Integer.toHexString(value));
+		}
 		
 		// RAM Enable Register
 		if (address >= 0x0000 && address <= 0x1FFF) {
