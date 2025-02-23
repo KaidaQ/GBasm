@@ -293,7 +293,18 @@ public class CPU {
 	                               " | New HL = " + Integer.toHexString(getHL()));
 	            break;
 	        }
-	
+	        case (byte) 0x56: // LD D, (HL)
+	            D = memory.read(addr = getHL()) & 0xFF;
+
+	            System.out.println("LD D, (HL) executed: D = " + Integer.toHexString(D) + 
+	                               " from address " + Integer.toHexString(addr));
+	            break;
+	        case (byte) 0x57: // LD D, A
+	            D = A;
+
+	            System.out.println("LD D, A executed: D = " + Integer.toHexString(D));
+	            break;
+    
 	        case (byte) 0x66:
 	        	H = memory.read(getHL()); //LD H, (HL)
 	        	System.out.println("LD H, (HL) executed : " + Integer.toHexString(H));
