@@ -27,10 +27,10 @@ public class Memory {
 	
 	public void loadROM(String filePath) {
 		try(FileInputStream fis = new FileInputStream(new File(filePath))) {
-			int bytesRead = fis.read(memory, 0x0000, Math.min(fis.available(), 0x8000));
+			int bytesRead = fis.read(getMemory(), 0x0000, Math.min(fis.available(), 0x8000));
 			System.out.println("Loaded " + bytesRead + " bytes into available memory.");
 			
-			mbcType = memory[0x0147] & 0xFF;
+			mbcType = getMemory()[0x0147] & 0xFF;
 			//detect MBC type at $0147;
 			
 			switch(mbcType) {
@@ -56,39 +56,78 @@ public class Memory {
 
 	public int read(int address) {
 	    // Handle special I/O register LY (FF44)
-		if (address == 0xFF44) {
-			System.out.println("LY Register read: Returning 0x91.");
-			return 0x5B; 
-		}
+	    if (address == 0xFF44) {
+	    	return 0x91;
+	    }
 		
 		//handle IE and IF registers-
 		if (address == 0xFFFF) return IE;
 		if (address == 0xFF0F) return IF;
 		
 		//read bytes
-		if(address >= 0 && address < memory.length) {
-			return memory[address] & 0xFF;
+		if(address >= 0 && address < getMemory().length) {
+			return getMemory()[address] & 0xFF;
 		} else if (address >= 0x4000 && address <= 0x7FFF) {
 			//banked rom header
 			int newAddress = (romBank * 0x4000) + (address - 0x4000);
-			return memory[newAddress] & 0xFF;
+			return getMemory()[newAddress] & 0xFF;
 		} else if (address >= 0xA000 && address <= 0xBFFF && ramEnabled) {
 			//banked ram read
 			int ramAddr = (ramBank * 0x2000) + (address - 0xA000);
-			return memory[ramAddr] & 0xFF;
+			return getMemory()[ramAddr] & 0xFF;
 		}
 		return 0xFF; // unmapped memory
 	}
 	
 	public void write(int address, int value) {
+		 // Detect and log stack overwrites
+	    if (address == cpu.getSP() || address == cpu.getSP() + 1) { 
+	        System.out.println("🚨 Stack overwrite detected at " + Integer.toHexString(address) +
+	            " | Value: " + Integer.toHexString(value) + 
+	            " | Written by instruction at PC: " + Integer.toHexString(cpu.getPC()));
+
+	        // Dump stack before the write
+	        System.out.println("⚠️ Stack Dump Before Overwrite:");
+	        for (int i = 0; i < 6; i++) {
+	            int stackAddr = cpu.getSP() + i;
+	            if (stackAddr < memory.length) {  // Prevent out-of-bounds access
+	                System.out.println("SP+" + i + " = " + Integer.toHexString(memory[stackAddr] & 0xFF));
+	            }
+	        }
+	    }
+
+	    // Handle I/O register writes separately
+	    if (address >= 0xFF00 && address <= 0xFFFF) {
+	        System.out.println("⚠️ Writing to I/O register: " + Integer.toHexString(address) + 
+	                           " | Value: " + Integer.toHexString(value));
+	    }
+
+	    // Normal memory write (ensure address is valid)
+	    if (address >= 0 && address < memory.length) {
+	        memory[address] = (byte) (value & 0xFF);
+	    } else {
+	        System.out.println("Invalid write access at address: " + Integer.toHexString(address) + 
+	                           " with write value: " + Integer.toHexString(value));
+	    }
+		
 		//handle IE and IF registers-
 		if (address == 0xFFFF) IE = value & 0xFF;
 		if (address == 0xFF0F) IF = value & 0xFF;
 		
 		// Check stack memory
-		if (address >= 0xC000 && address <= 0xFFFF) {
-		    System.out.println("⚠️ Stack memory modified at: " + Integer.toHexString(address) + " | Value: " + Integer.toHexString(value) +  " | Written by instruction at PC: " + Integer.toHexString(cpu.getPC()));
+		if (address == 0xFFFF && value == 0) {
+		    System.out.println("⚠️ Prevented overwriting IE register with zero!");
+		    return; // Ignore accidental writes to IE
 		}
+
+		
+		if (address >= 0xC000 && address <= 0xFFFF) {
+		    System.out.println("🛑 Stack write detected at: " + Integer.toHexString(address) + 
+		                       " | Value: " + Integer.toHexString(value) + 
+		                       " | Written by instruction at PC: " + Integer.toHexString(cpu.getPC()) + 
+		                       " | Current SP: " + Integer.toHexString(cpu.getSP()));
+		}
+
 		
 		if (address == 0x2040) {
 		    System.out.println("🚨 Writing to address 0x2040 | Value: " + Integer.toHexString(value & 0xFF));
@@ -124,7 +163,7 @@ public class Memory {
 		} else if (address >= 0xA000 && address <= 0xBFFF && ramEnabled) {
 			//RAM bank write
 			int ramAddr = (ramBank * 0x2000) + (address - 0xA000);
-			memory[ramAddr] = (byte) value;
+			getMemory()[ramAddr] = (byte) value;
 		} 
 		
 		if(mbcType == 3) {
@@ -149,15 +188,23 @@ public class Memory {
 				System.out.println("MBC3 RTC Latch: " + value);
 			} else if (address >= 0xA000 && address <= 0xBFFF && ramEnabled) {
 				int ramAddr = (ramBank * 0x2000) + (address - 0xA000);
-				memory[ramAddr] = (byte) value;
+				getMemory()[ramAddr] = (byte) value;
 			}
 		}
 		
 		//edge case to default memory write-
-		else if(address >= 0 && address < memory.length) {
-			memory[address] = (byte) (value & 0xFF);
+		else if(address >= 0 && address < getMemory().length) {
+			getMemory()[address] = (byte) (value & 0xFF);
 		} else {
 			System.out.println("Invalid write access at address: " + Integer.toHexString(address) + " with write value: " + Integer.toHexString(value));
 		}
+	}
+
+	public byte[] getMemory() {
+		return memory;
+	}
+
+	public void setMemory(byte[] memory) {
+		this.memory = memory;
 	}
 }

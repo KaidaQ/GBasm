@@ -202,13 +202,15 @@ public class CPU {
     public byte fetch() {
         byte opcode = (byte) memory.read(PC);
         
-        if (PC == 0x2040) { // ✅ Track the opcode at 0x2040
-            System.out.println("🔍 Opcode at PC 0x2040: " + Integer.toHexString(opcode & 0xFF));
+        // Log the opcode at 1F79
+        if (PC == 0x1F79) { 
+            System.out.println("🚨 Opcode at PC 1F79: " + Integer.toHexString(opcode & 0xFF));
         }
         
         PC++;
         return opcode;
     }
+
 	
 	/**
 	 * decode and execute the instruction
@@ -337,7 +339,14 @@ public class CPU {
  	    	    B = A;
  	    	    System.out.println("LD B, A executed: B = " + Integer.toHexString(B));
  	    	    break;
+ 	    	    
+ 	       case (byte) 0x31: // LD SP. (d16)
+ 	       		SP = (memory.read(PC++) & 0xFF << 8) | memory.read(PC++) & 0xFF;
 
+ 	       		System.out.println("LD SP, d16 executed: SP = " + Integer.toHexString(SP));
+ 	       		break;
+ 	       		
+ 	       		//i aint bothered to fix the space here
  	    	case (byte) 0x87: // ADD A, A
  	    	    A += A;
  	    	    setFlag(7, A == 0); // Zero Flag
@@ -852,7 +861,7 @@ public class CPU {
 	        	result = A - immediate;
 	            setFlag(7, (result & 0xFF) == 0);
 	            setFlag(6, true);
-	            setFlag(5, ((A & 0xF) - (immediate & 0xF)) < 0);
+	            setFlag(5, ((A & 0xF) < (immediate & 0xF)));
 	            setFlag(4, A < immediate);
 	            System.out.println("CP A, d8 executed. A = " + Integer.toHexString(A) + ", Immediate = " + Integer.toHexString(immediate) +
 	                       " | Zero Flag = " + getFlag(7) + " | Carry Flag = " + getFlag(4) + " | Result = " + Integer.toHexString(result));
@@ -1106,6 +1115,7 @@ public class CPU {
 
 	        case (byte) 0x20: { // JR NZ, n
 	            int offset = memory.read(PC++);
+	            if (offset > 127) offset -= 256;
 	            
 	            if (!getFlag(7)) { // Zero flag is not set
 	                PC += offset;
@@ -1153,20 +1163,35 @@ public class CPU {
 	        }
 
 	        case (byte) 0xCD: { // CALL nn
-	            int callAddr = (memory.read(PC) & 0xFF) | ((memory.read(PC + 1) & 0xFF) << 8);
-	            int returnAddr = PC + 2;
+	            int lowByte = memory.read(PC++);
+	            int highByte = memory.read(PC++);
+	            int newPC = (highByte << 8) | lowByte;
 
-	            System.out.println("📞 CALL executed: Jumping to " + Integer.toHexString(callAddr));
-	            System.out.println("🔼 Pushing Return Address: High=" + Integer.toHexString((returnAddr >> 8) & 0xFF) +
-	                               " Low=" + Integer.toHexString(returnAddr & 0xFF));
+	            System.out.println("📌 BEFORE CALL: Pushing Return Address " + Integer.toHexString(PC) + " to Stack.");
 
+	            // Make sure to decrement SP before writing!
 	            SP -= 2;
-	            memory.write(SP + 1, (returnAddr >> 8) & 0xFF);
-	            memory.write(SP, returnAddr & 0xFF);
-	            
-	            PC = callAddr;
+	            memory.write(SP + 1, (PC >> 8) & 0xFF);
+	            memory.write(SP, PC & 0xFF);
+
+	            System.out.println("📞 CALL executed: Jumping to " + Integer.toHexString(newPC));
+	            System.out.println("🔼 Pushed Return Address: High=" + Integer.toHexString(PC >> 8) + " Low=" + Integer.toHexString(PC & 0xFF));
+
+	            // Dump stack after CALL
+	            System.out.println("📌 Stack Dump After CALL (SP = " + Integer.toHexString(SP) + "): ");
+	            for (int i = 0; i < 6; i++) {
+	                System.out.println("SP+" + i + " = " + Integer.toHexString(memory.read(SP + i) & 0xFF));
+	            }
+
+	            PC = newPC;
 	            break;
 	        }
+
+
+
+
+
+
 
 	        case (byte) 0xC4: { // CALL NZ, nn
 	            addr = (memory.read(PC++) & 0xFF) | ((memory.read(PC++) & 0xFF) << 8);
@@ -1285,28 +1310,46 @@ public class CPU {
 	        	
 	        // Return instructions
 	        case (byte) 0xC9: { // RET
-	            System.out.println("Stack Dump Before RET (SP = " + Integer.toHexString(SP) + "): ");
+	            System.out.println("📌 BEFORE RET: Checking Stack Integrity.");
+	            
+	            // Dump stack before RET executes
 	            for (int i = 0; i < 6; i++) {
-	                System.out.println("SP+" + i + " = " + Integer.toHexString(memory.read(SP + i) & 0xFF));
+	                int stackAddr = SP + i;
+	                if (stackAddr < memory.getMemory().length) {  // Ensure within bounds
+	                    System.out.println("SP+" + i + " = " + Integer.toHexString(memory.getMemory()[stackAddr] & 0xFF));
+	                }
 	            }
-	            
-	            int newPC = (memory.read(SP) & 0xFF) | ((memory.read(SP + 1) & 0xFF) << 8);
-	            SP += 2;
-	            
-	            if (newPC == 0x0000) {
-	                System.out.println("⚠️ ERROR: RET popped PC = 0x0000! Stack might be corrupted.");
 
-	            }
-	            
 	            if (SP < 0xC000 || SP > 0xFFFF) { 
 	                System.out.println("⚠️ ERROR: Stack pointer SP is out of bounds: " + Integer.toHexString(SP));
 	                throw new RuntimeException("SP out of valid range, possible stack corruption.");
 	            }
-	            
+
+	            int poppedLow = memory.getMemory()[SP] & 0xFF;
+	            int poppedHigh = memory.getMemory()[SP + 1] & 0xFF;
+	            int newPC = (poppedHigh << 8) | poppedLow;
+	            SP += 2;
+
+	            System.out.println("📌 BEFORE RET: Popping Return Address from Stack.");
+	            System.out.println("Stack Dump Before RET (SP = " + Integer.toHexString(SP - 2) + "): ");
+	            System.out.println("SP+0 = " + Integer.toHexString(poppedLow));
+	            System.out.println("SP+1 = " + Integer.toHexString(poppedHigh));
+
+	            if (newPC == 0x0000 || newPC > 0xFFFF) {
+	                System.out.println("⚠️ ERROR: RET popped invalid PC = 0x" + Integer.toHexString(newPC));
+	                throw new RuntimeException("RET caused invalid PC jump, possible stack corruption.");
+	            }
+
 	            PC = newPC;
-	            System.out.println("RET executed: PC = " + Integer.toHexString(PC));
+	            System.out.println("🔄 RET executed: PC = " + Integer.toHexString(PC));
 	            break;
 	        }
+
+
+
+
+
+
 
 	        case (byte) 0xC0: // RET NZ
 	            if (!getFlag(7)) { // Zero flag is not set
