@@ -1425,7 +1425,7 @@ public class CPU {
 
 	            int poppedLow = memory.getMemory()[SP] & 0xFF;
 	            SP++;
-	            int poppedHigh = memory.getMemory()[SP + 1] & 0xFF;
+	            int poppedHigh = memory.getMemory()[SP] & 0xFF;
 	            SP++;
 	            int newPC = (poppedHigh << 8) | poppedLow;
 

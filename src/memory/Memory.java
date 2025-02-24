@@ -1,5 +1,8 @@
 package memory;
+
 import cpu.CPU;
+import ppu.PPU;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -7,6 +10,8 @@ import java.io.IOException;
 public class Memory {
 	
 	private CPU cpu;
+	private PPU ppu;
+	
 	private int joypadState = 0xFF;  // P1/JOYP Register (0xFF00)
 	private int timerCounter = 0;    // TIMA (0xFF05)
 	private int timerModulo = 0;     // TMA (0xFF06)
@@ -20,8 +25,13 @@ public class Memory {
 	private int interruptEnable = 0; // IE Register (0xFFFF)
 	private int dividerRegister = 0; // Divider Register (0xFF04)
 	
+	
 	public void setCPU(CPU cpu) {
 		this.cpu = cpu;
+	}
+	
+	public void setPPU(PPU ppu) {
+		this.ppu = ppu;
 	}
 	
 	private byte[] memory = new byte[0x10000]; //64kb of memory
@@ -348,18 +358,17 @@ public class Memory {
 	}
 	
 	public void incrementScanline() {
-		boolean debug = true;
+		boolean debug = false; //deprecated debug funct
 		scanline = (scanline + 1) % 154;
 		System.out.println("🔄 Scanline updated: LY = " + Integer.toHexString(scanline));
 		
+		if(ppu != null && scanline < 144) {
+			ppu.drawScanline(scanline, (scanline % 2 == 0) ? 0xFFFFFF : 0x000000);
+		}
+		
 		if(scanline == 144) {
-			if(debug) {
-				cpu.setIME(true);
-				System.out.println("Forcibly setting IME to enable.");
-			}
-			
 			cpu.triggerVBlank();
-			System.out.println("⚡ VBlank Interrupt Set: IF = " + Integer.toHexString(interruptFlags));
+			System.out.println("⚡ VBlank Triggered: IF = " + Integer.toHexString(interruptFlags));
 		}
 	}
 }

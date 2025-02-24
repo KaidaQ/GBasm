@@ -1,21 +1,23 @@
 package main;
 
+import java.awt.Color;
+
 import cpu.CPU;
 import memory.Memory;
 import ppu.PPU;
-
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 
 
 public class Emulator {
 	public static void main(String[] args) {
 		Memory memory = new Memory(); //set virtual ram
-		memory.loadROM("pokeRed.gb"); //set to test.gb to test real rom s
+		memory.loadROM("pokeRed.gb"); //set to test.gb to test real roms
+		
 		CPU cpu = new CPU();
 		cpu.setMemory(memory);
-
+		
+		PPU ppu = new PPU();
+		memory.setPPU(ppu);
+		
 		/*
 		 * memory.write(0x40, 0x3E); memory.write(0x41, 0x55); memory.write(0x42, 0xC9);
 		 */
@@ -33,7 +35,7 @@ public class Emulator {
 		cpu.setIME(true);
 		
 		/* testInterrupts(cpu,memory); */
-		runCPU(cpu, memory);
+		runCPU(cpu, memory, ppu);
 		//testOpcode(CPU, memory);
 		/* runCPU(cpu); */
 		
@@ -57,7 +59,6 @@ public class Emulator {
 	    }
 	}
 
-	
 	public static void ranInstruct(CPU cpu, Memory memory) {
 		for(int i = 0x100; i < 0xFFFF; i++) {
 			if(Math.floor(Math.random() * 5)> 3) {
@@ -82,13 +83,16 @@ public class Emulator {
 		System.out.println("Final val in A: " + Integer.toHexString(cpu.getAF() >> 8));
 	}
 	
-		public static void runCPU(CPU cpu, Memory memory) {
+		public static void runCPU(CPU cpu, Memory memory, PPU ppu) {
 		    int instructionCount = 0;
 	
 		    while (true) {
 		    	//Update the LCD scanline before checking IME
 		    	if (instructionCount % 2 == 0) {
 		    		memory.incrementScanline();
+		    		int ly = memory.read(0xFF44);
+		    		
+		    		ppu.drawScanline(ly, (ly % 2 == 0) ? Color.black.getRGB() : Color.WHITE.getRGB());
 		    	}
 		    	
 		        System.out.println("📌 IME: " + cpu.isIME() + 
@@ -126,7 +130,7 @@ public class Emulator {
 		        cpu.execute(opcode);
 	
 		        instructionCount++;
-		        if (instructionCount > 0xFFFF) { // Limit execution to prevent infinite loops
+		        if (instructionCount > 2200000) { // Limit execution to prevent infinite loops
 		            System.out.println("Instruction count exceeded, breaking the loop.");
 		            break;
 		        }
