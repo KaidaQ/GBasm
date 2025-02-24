@@ -40,51 +40,73 @@ public class CPU {
 	}
 	
 	public void handleInterrupt(int interruptType) {
-		System.out.println("Handling Interrupt: " + interruptType);
-		setIME(false); //disable interrupts
-		memory.write(0xFF0F, memory.read(0xFF0F) & ~(1 << interruptType)); //clear the IF flag
-		
-		System.out.println("⚠️ Interrupt " + interruptType + " modifying stack at SP: " + Integer.toHexString(SP));
-		
-		//push PC onto stack
-		SP -= 2;
-		memory.write(SP + 1,  (PC >> 8) & 0xFF); //high byte
-		memory.write(SP, PC & 0xFF); //low byte
-		
-		switch (interruptType) {
-		case 0: // VBlank
-			PC = 0x40;
-			System.out.println("VBlank Interrupt Triggered.");
-			System.out.println("Jumping to Interrupt Vector: " + "0x" + Integer.toHexString(PC));
-			break;
-		case 1: // LCD
-			System.out.println("LCD STAT Interrupt Triggered.");
-			PC = 0x48;
-			break;
-		case 2: // Timer
-			System.out.println("Timer Interrupt Triggered.");
-			PC = 0x50;
-			break;
-		case 3: // Serial
-			System.out.println("Serial Interrupt Triggered.");
-			PC = 0x58;
-			break;
-		case 4: // Joy-Pad
-			System.out.println("Joypad Interrupt Triggered.");
-			PC = 0x60;
-			break;
-		}
-		System.out.println("Interrupt Handled: " + interruptType + " Jumping to " + Integer.toHexString(PC).toUpperCase());
-		
+	    System.out.println("⚡ Handling Interrupt: " + interruptType);
+	    System.out.println("📌 Before Handling: IF = " + Integer.toBinaryString(memory.read(0xFF0F)));
+	    System.out.println("📌 Before Interrupt: SP = " + Integer.toHexString(SP));
+
+	    setIME(false); // Disable interrupts
+
+	    // Clear the IF flag for this interrupt
+	    memory.write(0xFF0F, memory.read(0xFF0F) & ~(1 << interruptType));
+
+	    System.out.println("📌 After Clearing IF: IF = " + Integer.toBinaryString(memory.read(0xFF0F)));
+
+	    System.out.println("⚠️ Interrupt " + interruptType + " modifying stack at SP: " + Integer.toHexString(SP));
+
+	    if (SP < 0xFFFC) {
+	    	System.out.println("❌ Stack Pointer too low! Resetting SP to 0xFFFE.");
+	    	SP = 0xFFFE;
+	    }
+	    
+	    // Push PC onto stack
+	    SP--;
+	    memory.write(SP, (PC >> 8) & 0xFF); // High byte
+	    SP--;
+	    memory.write(SP, PC & 0xFF); // Low byte
+
+	    System.out.println("📌 After Interrupt Handling (PC Push): SP = " + Integer.toHexString(SP));
+	    System.out.println("📌 Stack Values: SP+0 = " + Integer.toHexString(memory.read(SP)) +
+	                       " | SP+1 = " + Integer.toHexString(memory.read(SP+1)));
+	    // Set PC to the correct interrupt vector
+	    switch (interruptType) {
+	        case 0: // VBlank
+	            PC = 0x40;
+	            System.out.println("⚡ VBlank Interrupt Triggered. Jumping to 0x40");
+	            break;
+	        case 1: // LCD STAT
+	            PC = 0x48;
+	            System.out.println("🖥️ LCD STAT Interrupt Triggered. Jumping to 0x48");
+	            break;
+	        case 2: // Timer
+	            PC = 0x50;
+	            System.out.println("⏳ Timer Interrupt Triggered. Jumping to 0x50");
+	            break;
+	        case 3: // Serial
+	            PC = 0x58;
+	            System.out.println("🔄 Serial Interrupt Triggered. Jumping to 0x58");
+	            break;
+	        case 4: // Joypad
+	            PC = 0x60;
+	            System.out.println("🎮 Joypad Interrupt Triggered. Jumping to 0x60");
+	            break;
+	        default:
+	            System.out.println("⚠️ Unknown Interrupt Triggered: " + interruptType);
+	            break;
+	    }
+
+	    System.out.println("✅ Interrupt Handled: " + interruptType + " Jumping to " + Integer.toHexString(PC).toUpperCase());
 	}
+
 	
 	//VBlank Interrupt
 	public void triggerVBlank() {
-		memory.write(0xFFFF, memory.read(0xFFFF) | 0x01);
-		memory.write(0xFF0F, memory.read(0xFF0F) | 0x01);
+	    int oldIF = memory.read(0xFF0F);
+	    int oldIE = memory.read(0xFFFF);
+		memory.write(0xFF0F, oldIF | 0x01); //set vblank interrupt
 		
-		setIME(true);
-		System.out.println("VBlank Interrupt Triggered");
+		System.out.println("⚡ VBlank Interrupt Triggered | Old IF: " + Integer.toBinaryString(oldIF) +
+		        " -> New IF: " + Integer.toBinaryString(memory.read(0xFF0F)));
+		System.out.println("⚠️ Interrupt Enable Register (IE) = " + Integer.toBinaryString(oldIE));
 	}
 	
 	/**
@@ -202,11 +224,23 @@ public class CPU {
     public byte fetch() {
         byte opcode = (byte) memory.read(PC);
         
-        // Log the opcode at 1F79
-        if (PC == 0x1F79) { 
-            System.out.println("🚨 Opcode at PC 1F79: " + Integer.toHexString(opcode & 0xFF));
+        if (PC == 0x40) {
+            System.out.println("🔍 Inspecting VBlank Handler at $40...");
+            for (int i = 0; i < 10; i++) {
+                System.out.println("Addr $" + Integer.toHexString(0x40 + i) + ": Opcode = " + Integer.toHexString(memory.read(0x40 + i) & 0xFF));
+            }
         }
         
+        if (PC == 0x2024) {
+            System.out.println("🔍 Inspecting code at $2024...");
+            for (int i = 0; i < 10; i++) {
+                System.out.println("Addr $" + Integer.toHexString(0x2024 + i) + ": Opcode = " + Integer.toHexString(memory.read(0x2024 + i) & 0xFF));
+            }
+        }
+
+        
+        System.out.println("🔍 Fetching opcode at PC: " + Integer.toHexString(PC) + " | SP: " + Integer.toHexString(SP));
+
         PC++;
         return opcode;
     }
@@ -220,6 +254,17 @@ public class CPU {
 		int addr;
 		int value;
 		int result;
+		
+		if (opcode == 0xC5 || opcode == 0xD5 || opcode == 0xE5 || opcode == 0xF5) { // PUSH instructions
+		    System.out.println("📌 PUSH detected! Opcode: " + Integer.toHexString(opcode) + " | SP before: " + Integer.toHexString(SP));
+		}
+		if (opcode == 0xCD) { // CALL instruction
+		    System.out.println("📌 CALL detected! Opcode: " + Integer.toHexString(opcode) + " | SP before: " + Integer.toHexString(SP));
+		}
+		if (opcode == 0xC1 || opcode == 0xD1 || opcode == 0xE1 || opcode == 0xF1) { // POP instructions
+		    System.out.println("📌 POP detected! Opcode: " + Integer.toHexString(opcode) + " | SP before: " + Integer.toHexString(SP));
+		}
+
 	    switch(opcode) {
 	        // Placeholder instruction
 	        case (byte) 0x00: // NOP - No operation (commonly used as a placeholder)
@@ -1379,9 +1424,10 @@ public class CPU {
 	            }
 
 	            int poppedLow = memory.getMemory()[SP] & 0xFF;
+	            SP++;
 	            int poppedHigh = memory.getMemory()[SP + 1] & 0xFF;
+	            SP++;
 	            int newPC = (poppedHigh << 8) | poppedLow;
-	            SP += 2;
 
 	            System.out.println("📌 BEFORE RET: Popping Return Address from Stack.");
 	            System.out.println("Stack Dump Before RET (SP = " + Integer.toHexString(SP - 2) + "): ");
@@ -1397,12 +1443,6 @@ public class CPU {
 	            System.out.println("🔄 RET executed: PC = " + Integer.toHexString(PC));
 	            break;
 	        }
-
-
-
-
-
-
 
 	        case (byte) 0xC0: // RET NZ
 	            if (!getFlag(7)) { // Zero flag is not set

@@ -2,6 +2,7 @@ package main;
 
 import cpu.CPU;
 import memory.Memory;
+import ppu.PPU;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -12,7 +13,6 @@ public class Emulator {
 	public static void main(String[] args) {
 		Memory memory = new Memory(); //set virtual ram
 		memory.loadROM("pokeRed.gb"); //set to test.gb to test real rom s
-		
 		CPU cpu = new CPU();
 		cpu.setMemory(memory);
 
@@ -21,12 +21,22 @@ public class Emulator {
 		 */
 
 		System.out.println("init emulator;");
+		System.out.println("🔍 Initial Stack Pointer (SP): " + Integer.toHexString(cpu.getSP()));
 		System.out.println("cpu starting: " + Integer.toHexString(cpu.getAF()));
+		
+		
+		//Enable the vblank interrupt.
+		System.out.println("✅ Enabling VBlank Interrupt in IE (0xFFFF)");
+		memory.write(0xFFFF, memory.read(0xFFFF) | 0x01);
+		
+		//enable the IME to debug
+		cpu.setIME(true);
 		
 		/* testInterrupts(cpu,memory); */
 		runCPU(cpu, memory);
 		//testOpcode(CPU, memory);
 		/* runCPU(cpu); */
+		
 	}
 	
 	public static void testInterrupts(CPU cpu, Memory memory) {
@@ -72,38 +82,54 @@ public class Emulator {
 		System.out.println("Final val in A: " + Integer.toHexString(cpu.getAF() >> 8));
 	}
 	
-	public static void runCPU(CPU cpu, Memory memory) {
-	    int instructionCount = 0;
-
-	    while (true) {
-	        // Check for interrupts before fetching next instruction
-	        if (cpu.isIME()) { // Interrupt Master Enable must be true
-	            int interruptFlags = memory.read(0xFF0F); // IF Register (Interrupt Request)
-	            int enabledInterrupts = memory.read(0xFFFF); // IE Register (Interrupt Enable)
-
-	            int pendingInterrupts = interruptFlags & enabledInterrupts;
-	            
-	            if (pendingInterrupts != 0) {
-	                System.out.println("⚡ Interrupt Requested: " + Integer.toBinaryString(pendingInterrupts));
-	                
-	                for (int i = 0; i < 5; i++) {
-	                    if ((pendingInterrupts & (1 << i)) != 0) { 
-	                        cpu.handleInterrupt(i); // Handle the highest-priority interrupt
-	                        break;
-	                    }
-	                }
-	            }
-	        }
-
-	        // Fetch and execute the next instruction
-	        byte opcode = cpu.fetch();  
-	        cpu.execute(opcode);
-
-	        instructionCount++;
-	        if (instructionCount > 0xFFFF) { // Limit execution to prevent infinite loops
-	            System.out.println("Instruction count exceeded, breaking the loop.");
-	            break;
-	        }
-	    }
-	}
+		public static void runCPU(CPU cpu, Memory memory) {
+		    int instructionCount = 0;
+	
+		    while (true) {
+		    	//Update the LCD scanline before checking IME
+		    	if (instructionCount % 2 == 0) {
+		    		memory.incrementScanline();
+		    	}
+		    	
+		        System.out.println("📌 IME: " + cpu.isIME() + 
+		                " | IF: " + Integer.toBinaryString(memory.read(0xFF0F)) +
+		                " | IE: " + Integer.toBinaryString(memory.read(0xFFFF)));
+		        System.out.println();
+		        
+		        
+		        if (memory.read(0xFFFF) == 0) {
+		            System.out.println("🚨 IE (0xFFFF) was reset to 0! Re-enabling...");
+		            memory.write(0xFFFF, memory.read(0xFFFF) | 0x01);
+		        }
+		        
+		        // Check for interrupts before fetching next instruction
+		        if (cpu.isIME()) { // Interrupt Master Enable must be true
+		            int interruptFlags = memory.read(0xFF0F); // IF Register (Interrupt Request)
+		            int enabledInterrupts = memory.read(0xFFFF); // IE Register (Interrupt Enable)
+	
+		            int pendingInterrupts = interruptFlags & enabledInterrupts;
+		            
+		            if (pendingInterrupts != 0) {
+		            	System.out.println("⚡ Interrupt Requested: " + Integer.toBinaryString(pendingInterrupts));
+		                
+		                for (int i = 0; i < 5; i++) {
+		                    if ((pendingInterrupts & (1 << i)) != 0) { 
+		                        cpu.handleInterrupt(i); // Handle the highest-priority interrupt
+		                        break;
+		                    }
+		                }
+		            }
+		        }
+	
+		        // Fetch and execute the next instruction
+		        byte opcode = cpu.fetch();  
+		        cpu.execute(opcode);
+	
+		        instructionCount++;
+		        if (instructionCount > 0xFFFF) { // Limit execution to prevent infinite loops
+		            System.out.println("Instruction count exceeded, breaking the loop.");
+		            break;
+		        }
+		    }
+		}
 }

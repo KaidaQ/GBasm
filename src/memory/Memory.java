@@ -7,6 +7,18 @@ import java.io.IOException;
 public class Memory {
 	
 	private CPU cpu;
+	private int joypadState = 0xFF;  // P1/JOYP Register (0xFF00)
+	private int timerCounter = 0;    // TIMA (0xFF05)
+	private int timerModulo = 0;     // TMA (0xFF06)
+	private int timerControl = 0;    // TAC (0xFF07)
+	private int interruptFlags = 0;  // IF Register (0xFF0F)
+	private int lcdControl = 0;      // LCDC (0xFF40)
+	private int lcdStatus = 0;       // STAT (0xFF41)
+	private int scrollY = 0;         // SCY (0xFF42)
+	private int scrollX = 0;         // SCX (0xFF43)
+	private int scanline = 0;        // LY (0xFF44)
+	private int interruptEnable = 0; // IE Register (0xFFFF)
+	private int dividerRegister = 0; // Divider Register (0xFF04)
 	
 	public void setCPU(CPU cpu) {
 		this.cpu = cpu;
@@ -54,12 +66,49 @@ public class Memory {
 		}
 	}
 
-	public int read(int address) {
-	    // Handle special I/O register LY (FF44)
-	    if (address == 0xFF44) {
-	    	return 0x91;
+	public int read(int address) {	
+	    //IO Switch Cases
+	    switch (address) {
+	    case 0xFF00: //joypad input
+	    	return handleJoypadRead();
+	    
+	    case 0xFF04: //Divider register
+	    	return (int) ((System.nanoTime() / 256) & 0xFF);
+	    	
+        case 0xFF05: // Timer Counter
+            return timerCounter;
+
+        case 0xFF06: // Timer Modulo
+            return timerModulo;
+
+        case 0xFF07: // Timer Control
+            return timerControl;
+
+        case 0xFF0F: // Interrupt Flags
+            return interruptFlags;
+
+        case 0xFF40: // LCD Control
+            return lcdControl;
+
+        case 0xFF41: // LCD Status
+            return lcdStatus;
+
+        case 0xFF42: // Background Scroll Y
+            return scrollY;
+
+        case 0xFF43: // Background Scroll X
+            return scrollX;
+
+        case 0xFF44: // LY (Current Scanline)
+        	System.out.println("📖 Read LY ($FF44) = " + Integer.toHexString(scanline));
+            return scanline;
+
+        case 0xFFFF: // Interrupt Enable
+            return interruptEnable;
+            
 	    }
-		
+	    
+	    
 		//handle IE and IF registers-
 		if (address == 0xFFFF) return IE;
 		if (address == 0xFF0F) return IF;
@@ -80,7 +129,66 @@ public class Memory {
 	}
 	
 	public void write(int address, int value) {
-		 // Detect and log stack overwrites
+	    if (address == 0xFFFF) {
+	        System.out.println("⚠️ Writing to IE Register (0xFFFF) | Old: " + Integer.toBinaryString(interruptEnable) +
+	                           " -> New: " + Integer.toBinaryString(value));
+	    }
+	    if (address == 0xFF0F) {
+	        System.out.println("⚠️ Writing to IF Register (0xFF0F) | Old: " + Integer.toBinaryString(interruptFlags) +
+	                           " -> New: " + Integer.toBinaryString(value));
+	    }
+	    
+		//io registers
+		switch (address) {
+        case 0xFF00: // Joypad Input
+            joypadState = value;
+            return;
+
+        case 0xFF04: // Divider Register (Reset)
+            dividerRegister = 0;
+            return;
+
+        case 0xFF05: // Timer Counter
+            timerCounter = value;
+            return;
+
+        case 0xFF06: // Timer Modulo
+            timerModulo = value;
+            return;
+
+        case 0xFF07: // Timer Control
+            timerControl = value;
+            return;
+
+        case 0xFF0F: // Interrupt Flags
+            interruptFlags = value;
+            return;
+
+        case 0xFF40: // LCD Control
+            lcdControl = value;
+            return;
+
+        case 0xFF41: // LCD Status
+            lcdStatus = value;
+            return;
+
+        case 0xFF42: // Background Scroll Y
+            scrollY = value;
+            return;
+
+        case 0xFF43: // Background Scroll X
+            scrollX = value;
+            return;
+
+        case 0xFF44: // LY (Current Scanline) (Writing resets it)
+            scanline = 0;
+            return;
+
+        case 0xFFFF: // Interrupt Enable
+            interruptEnable = value;
+            return;
+    }
+			 // Detect and log stack overwrites
 	    if (address == cpu.getSP() || address == cpu.getSP() + 1) { 
 	        System.out.println("🚨 Stack overwrite detected at " + Integer.toHexString(address) +
 	            " | Value: " + Integer.toHexString(value) + 
@@ -206,5 +314,52 @@ public class Memory {
 
 	public void setMemory(byte[] memory) {
 		this.memory = memory;
+	}
+	
+	private int handleJoypadRead() {
+	    int result = 0xFF;
+
+	    // Simulated button states (example: A and Start are pressed)
+	    boolean A = false;
+	    boolean B = false;
+	    boolean Select = false;
+	    boolean Start = true;
+	    boolean Right = false;
+	    boolean Left = false;
+	    boolean Up = false;
+	    boolean Down = false;
+
+	    // Check which buttons are selected
+	    if ((joypadState & 0x10) == 0) { // Action Buttons (A, B, Select, Start)
+	        result &= ~(A ? 0x1 : 0);
+	        result &= ~(B ? 0x2 : 0);
+	        result &= ~(Select ? 0x4 : 0);
+	        result &= ~(Start ? 0x8 : 0);
+	    }
+
+	    if ((joypadState & 0x20) == 0) { // D-Pad (Up, Down, Left, Right)
+	        result &= ~(Right ? 0x1 : 0);
+	        result &= ~(Left ? 0x2 : 0);
+	        result &= ~(Up ? 0x4 : 0);
+	        result &= ~(Down ? 0x8 : 0);
+	    }
+
+	    return result;
+	}
+	
+	public void incrementScanline() {
+		boolean debug = true;
+		scanline = (scanline + 1) % 154;
+		System.out.println("🔄 Scanline updated: LY = " + Integer.toHexString(scanline));
+		
+		if(scanline == 144) {
+			if(debug) {
+				cpu.setIME(true);
+				System.out.println("Forcibly setting IME to enable.");
+			}
+			
+			cpu.triggerVBlank();
+			System.out.println("⚡ VBlank Interrupt Set: IF = " + Integer.toHexString(interruptFlags));
+		}
 	}
 }
