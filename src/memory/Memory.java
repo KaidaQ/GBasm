@@ -392,7 +392,13 @@ public class Memory {
 	    scanline = (scanline + 1) % 154;
 	    updateLY(scanline);
 	    System.out.println("🔄 Scanline updated: LY = " + scanline);
-
+	    System.out.println("🖥 LCDC Read During Scanline: " + Integer.toBinaryString(read(0xFF40)));
+	    
+	    if ((read(0xFF40) & 0x80) == 0) {
+	        System.out.println("🚨 LCDC Disabled! Forcing Enable...");
+	        write(0xFF40, read(0xFF40) | 0x80);
+	    }
+	    
 	    int lcdc = read(0xFF40);
 	    if ((lcdc & 0x80) == 0) {
 	        System.out.println("🛑 LCD is OFF, skipping scanline render.");
