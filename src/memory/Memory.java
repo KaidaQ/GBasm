@@ -25,6 +25,7 @@ public class Memory {
 	private int interruptEnable = 0; // IE Register (0xFFFF)
 	private int dividerRegister = 0; // Divider Register (0xFF04)
 	
+	private boolean vramAccessible = true; // Flag to control VRAM access
 	
 	public void setCPU(CPU cpu) {
 		this.cpu = cpu;
@@ -118,6 +119,12 @@ public class Memory {
             
 	    }
 	    
+	    if (address >= 0x8000 && address <= 0x9FFF) {
+	    	if (!isVRAMAccessible()) {
+	    		System.out.println("Attempting to write VRAM data while VRAM is locked!");
+	    		return 0xFF;
+	    	}
+	    }
 	    
 		//handle IE and IF registers-
 		if (address == 0xFFFF) return IE;
@@ -138,6 +145,20 @@ public class Memory {
 		return 0xFF; // unmapped memory
 	}
 	
+	public boolean isVRAMAccessible() {
+	    int ppuMode = lcdStatus & 0x03; // Extract PPU mode from STAT register
+	    boolean accessible = (ppuMode == 0 || ppuMode == 1); // VRAM writes allowed in HBlank/VBlank
+
+	    if (!accessible) {
+	        System.out.println("❌ VRAM Locked! Mode: " + ppuMode);
+	    } else {
+	        System.out.println("✅ VRAM is accessible!");
+	    }
+
+	    return accessible;
+	}
+
+
 	public void write(int address, int value) {
 	    if (address == 0xFFFF) {
 	        System.out.println("⚠️ Writing to IE Register (0xFFFF) | Old: " + Integer.toBinaryString(interruptEnable) +
@@ -146,6 +167,18 @@ public class Memory {
 	    if (address == 0xFF0F) {
 	        System.out.println("⚠️ Writing to IF Register (0xFF0F) | Old: " + Integer.toBinaryString(interruptFlags) +
 	                           " -> New: " + Integer.toBinaryString(value));
+	    }
+	    
+	    if (address == 0xFF40) { // LCDC Register
+	        System.out.println("🖥 LCDC Write Detected: " + Integer.toBinaryString(value) + " (HEX: " + Integer.toHexString(value) + ")");
+	        lcdControl = value;  // Store LCDC value properly
+
+	        if ((lcdControl & 0x80) != 0) {
+	            System.out.println("✅ LCD ENABLED! 🚀");
+	        } else {
+	            System.out.println("🛑 LCD DISABLED!");
+	        }
+	        return;
 	    }
 	    
 		//io registers
@@ -174,10 +207,15 @@ public class Memory {
             interruptFlags = value;
             return;
 
-        case 0xFF40: // LCD Control
+        case 0xFF40: // LCD Control (LCDC)
+            System.out.println("🖥 LCDC ($FF40) updated: " + Integer.toBinaryString(value));
             lcdControl = value;
+            if ((lcdControl & 0x80) != 0) {
+                System.out.println("✅ LCD ENABLED!");
+            } else {
+                System.out.println("🛑 LCD DISABLED!");
+            }
             return;
-
         case 0xFF41: // LCD Status
             lcdStatus = value;
             return;
@@ -189,6 +227,7 @@ public class Memory {
         case 0xFF43: // Background Scroll X
             scrollX = value;
             return;
+
 
         case 0xFF44: // LY (Current Scanline) (Writing resets it)
             scanline = 0;
@@ -261,6 +300,15 @@ public class Memory {
 		    System.out.println("⚠️ Writing to I/O register: " + Integer.toHexString(address) + " | Value: " + Integer.toHexString(value));
 		}
 		
+		// Handle VRAM writes
+		if (address >= 0x8000 && address <= 0x9FFF) {
+			if (!isVRAMAccessible()) {
+				System.out.println("⚠️ Attempting to write VRAM while locked! Ignoring.");
+				return;
+			}
+			memory[address] = (byte) value; // Use main memory array
+		}
+
 		// RAM Enable Register
 		if (address >= 0x0000 && address <= 0x1FFF) {
 			ramEnabled = (value & 0x0F) == 0x0A;
@@ -326,6 +374,84 @@ public class Memory {
 		this.memory = memory;
 	}
 	
+	public void debugVRAM() {
+	    System.out.println("🔍 VRAM Dump (0x8000-0x8010):");
+	    for (int i = 0; i < 16; i++) {
+	        System.out.print(Integer.toHexString(read(0x8000 + i)) + " ");
+	    }
+	    System.out.println();
+	}
+
+	
+	public void updateLY(int value) {
+	    scanline = value & 0xFF; // Ensure 8-bit range
+	    System.out.println("📖 Updating LY Register ($FF44) to: " + scanline);
+	}
+
+	public void incrementScanline() {
+	    scanline = (scanline + 1) % 154;
+	    updateLY(scanline);
+	    System.out.println("🔄 Scanline updated: LY = " + scanline);
+
+	    int lcdc = read(0xFF40);
+	    if ((lcdc & 0x80) == 0) {
+	        System.out.println("🛑 LCD is OFF, skipping scanline render.");
+	        return;
+	    }
+
+	    if (scanline < 144) { // Visible scanlines (Rendering)
+	        if (scanline % 8 == 0) {
+	            setPPUMode(2); // OAM Scan starts
+	        } else if (scanline % 8 == 4) {
+	            setPPUMode(3); // Rendering Pixels
+	        } else if (scanline % 8 == 7) {
+	            setPPUMode(0); // HBlank (VRAM should be accessible!)
+	        }
+	        ppu.renderScanline();
+
+	    } else if (scanline == 144) { 
+	        setPPUMode(1); // VBlank starts
+	        ppu.refreshScreen();
+	        cpu.triggerVBlank();
+	        System.out.println("⚡ VBlank Interrupt Set: IF = " + Integer.toHexString(interruptFlags));
+	    }
+	}
+
+
+
+
+
+
+	
+	private void setPPUMode(int mode) {
+	    lcdStatus = (lcdStatus & 0xFC) | (mode & 0x03);
+	    System.out.println("🎛 PPU Mode Updated: " + mode);
+	    
+	    switch (mode) {
+	        case 0: // HBlank
+	            vramAccessible = true;
+	            System.out.println("✅ VRAM is accessible!");
+	            if ((lcdStatus & 0x08) != 0) cpu.triggerLCDStat();
+	            break;
+	        case 1: // VBlank
+	            vramAccessible = true;
+	            cpu.triggerVBlank();
+	            System.out.println("⚡ VBlank Interrupt Set!");
+	            if ((lcdStatus & 0x10) != 0) cpu.triggerLCDStat();
+	            break;
+	        case 2: // OAM Scan
+	            vramAccessible = false;
+	            System.out.println("❌ VRAM Locked! Mode: " + mode);
+	            if ((lcdStatus & 0x20) != 0) cpu.triggerLCDStat();
+	            break;
+	        case 3: // Drawing Pixels
+	            vramAccessible = false;
+	            System.out.println("❌ VRAM Locked! Mode: " + mode);
+	            break;
+	    }
+	}
+
+	
 	private int handleJoypadRead() {
 	    int result = 0xFF;
 
@@ -357,18 +483,4 @@ public class Memory {
 	    return result;
 	}
 	
-	public void incrementScanline() {
-		boolean debug = false; //deprecated debug funct
-		scanline = (scanline + 1) % 154;
-		System.out.println("🔄 Scanline updated: LY = " + Integer.toHexString(scanline));
-		
-		if(ppu != null && scanline < 144) {
-			ppu.drawScanline(scanline, (scanline % 2 == 0) ? 0xFFFFFF : 0x000000);
-		}
-		
-		if(scanline == 144) {
-			cpu.triggerVBlank();
-			System.out.println("⚡ VBlank Triggered: IF = " + Integer.toHexString(interruptFlags));
-		}
-	}
 }

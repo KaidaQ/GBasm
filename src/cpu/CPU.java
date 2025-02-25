@@ -98,7 +98,7 @@ public class CPU {
 	}
 
 	
-	//VBlank Interrupt
+	//Interrupts
 	public void triggerVBlank() {
 	    int oldIF = memory.read(0xFF0F);
 	    int oldIE = memory.read(0xFFFF);
@@ -109,6 +109,15 @@ public class CPU {
 		System.out.println("⚠️ Interrupt Enable Register (IE) = " + Integer.toBinaryString(oldIE));
 	}
 	
+	public void triggerLCDStat() {
+	    int oldIF = memory.read(0xFF0F);
+	    int oldIE = memory.read(0xFFFF);
+		memory.write(0xFF0F, oldIF | 0x02); //set LCD STAT Interrupt
+		
+		System.out.println("⚡ LCD STAT Interrupt Triggered | Old IF: " + Integer.toBinaryString(oldIF) +
+		        " -> New IF: " + Integer.toBinaryString(memory.read(0xFF0F)));
+		System.out.println("⚠️ Interrupt Enable Register (IE) = " + Integer.toBinaryString(oldIE));
+	}
 	/**
 	 * Reset CPU state
 	 */
